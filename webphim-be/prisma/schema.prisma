@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  name          String
+  avatar        String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  watchHistory  WatchHistory[]
+  watchlist     Watchlist[]
+  ratings       Rating[]
+  profiles      Profile[]
+
+  @@map("users")
+}
+
+model Profile {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  name       String
+  avatarUrl  String?  @map("avatar_url")
+  isKids     Boolean  @default(false) @map("is_kids")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// CONTENT (Task 4.1)
+// ============================================
+
+enum ContentType {
+  MOVIE
+  SERIES
+}
+
+enum MaturityRating {
+  G
+  PG
+  PG13
+  R
+  NC17
+}
+
+model Content {
+  id              String         @id @default(uuid())
+  type            ContentType
+  title           String
+  description     String
+  releaseYear     Int            @map("release_year")
+  maturityRating  MaturityRating @default(PG13) @map("maturity_rating")
+  duration        Int?
+  thumbnailUrl    String?        @map("thumbnail_url")
+  bannerUrl       String?        @map("banner_url")
+  trailerUrl      String?        @map("trailer_url")
+  viewCount       Int            @default(0) @map("view_count")
+  searchVector    Unsupported("tsvector")? @map("search_vector")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  seasons         Season[]
+  contentGenres   ContentGenre[]
+  contentCast     ContentCastCrew[]
+  watchHistory    WatchHistory[]
+  watchlist       Watchlist[]
+  ratings         Rating[]
+  videos          Video[]
+
+  @@index([type])
+  @@index([releaseYear])
+  @@map("content")
+}
+
+// ============================================
+// SERIES STRUCTURE (Task 4.2)
+// ============================================
+
+model Season {
+  id            String   @id @default(uuid())
+  contentId     String   @map("content_id")
+  seasonNumber  Int      @map("season_number")
+  title         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  content       Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  episodes      Episode[]
+
+  @@unique([contentId, seasonNumber])
+  @@map("seasons")
+}
+
+model Episode {
+  id             String   @id @default(uuid())
+  seasonId       String   @map("season_id")
+  episodeNumber  Int      @map("episode_number")
+  title          String
+  description    String?
+  duration       Int
+  videoUrl       String?  @map("video_url")
+  thumbnailUrl   String?  @map("thumbnail_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  season         Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, episodeNumber])
+  @@map("episodes")
+}
+
+// ============================================
+// GENRES (Task 4.3)
+// ============================================
+
+model Genre {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  slug          String         @unique
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  contentGenres ContentGenre[]
+
+  @@map("genres")
+}
+
+model ContentGenre {
+  contentId String  @map("content_id")
+  genreId   String  @map("genre_id")
+
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  genre     Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, genreId])
+  @@map("content_genres")
+}
+
+// ============================================
+// CAST & CREW (Task 4.4)
+// ============================================
+
+enum CastRole {
+  ACTOR
+  DIRECTOR
+  WRITER
+}
+
+model CastCrew {
+  id          String            @id @default(uuid())
+  name        String
+  photoUrl    String?           @map("photo_url")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  contentCast ContentCastCrew[]
+
+  @@map("cast_crew")
+}
+
+model ContentCastCrew {
+  contentId    String   @map("content_id")
+  castCrewId   String   @map("cast_crew_id")
+  role         CastRole
+  character    String?
+  displayOrder Int      @default(0) @map("display_order")
+
+  content      Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  castCrew     CastCrew @relation(fields: [castCrewId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, castCrewId, role])
+  @@map("content_cast_crew")
+}
+
+// ============================================
+// USER INTERACTIONS (Task 4.5)
+// ============================================
+
+model WatchHistory {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  contentId  String   @map("content_id")
+  episodeId  String?  @map("episode_id")
+  progress   Int      @default(0)
+  duration   Int      @default(0)
+  watchedAt  DateTime @default(now()) @map("watched_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, episodeId])
+  @@index([userId])
+  @@map("watch_history")
+}
+
+model Watchlist {
+  userId    String   @map("user_id")
+  contentId String   @map("content_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, contentId])
+  @@map("watchlist")
+}
+
+model Rating {
+  userId    String   @map("user_id")
+  contentId String   @map("content_id")
+  score     Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, contentId])
+  @@map("ratings")
+}
+
+// ============================================
+// VIDEO UPLOAD & TRANSCODE (Sprint 6)
+// ============================================
+
+enum VideoStatus {
+  UPLOADING
+  UPLOADED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Video {
+  id              String       @id @default(uuid())
+  contentId       String?      @map("content_id")
+  originalName    String       @map("original_name")
+  originalPath    String       @map("original_path")
+  mimeType        String       @map("mime_type")
+  fileSize        BigInt       @map("file_size")
+  duration        Float?
+  status          VideoStatus  @default(UPLOADING)
+  hlsPath         String?      @map("hls_path")
+  thumbnailPaths  String[]     @default([]) @map("thumbnail_paths")
+  errorMessage    String?      @map("error_message")
+  transcodeJobId  String?      @map("transcode_job_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  content         Content?     @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@index([contentId])
+  @@index([status])
+  @@map("videos")
+}

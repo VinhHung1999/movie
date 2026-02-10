@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="640" height="480" fill="#141414"/>
+  <rect x="40" y="100" width="360" height="220" rx="6" fill="#1a1a2e"/>
+  <rect x="50" y="110" width="340" height="195" fill="#16213e"/>
+  <rect x="400" y="60" width="200" height="360" rx="12" fill="#1a1a2e"/>
+  <rect x="410" y="80" width="180" height="310" rx="2" fill="#16213e"/>
+  <rect x="120" y="340" width="160" height="100" rx="8" fill="#1a1a2e"/>
+  <rect x="128" y="348" width="144" height="76" fill="#16213e"/>
+  <text x="320" y="250" text-anchor="middle" fill="#E50914" font-size="20" font-family="sans-serif">Watch everywhere</text>
+</svg>

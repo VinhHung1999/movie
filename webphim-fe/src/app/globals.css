@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-netflix-red: #E50914;
+  --color-netflix-red-hover: #F40612;
+  --color-netflix-black: #141414;
+  --color-netflix-dark: #181818;
+  --color-netflix-gray: #2F2F2F;
+  --color-netflix-light-gray: #808080;
+  --color-netflix-white: #E5E5E5;
+  --color-netflix-dark-gray: #303030;
+  --color-netflix-mid-gray: #6D6D6E;
+  --color-netflix-border: #333;
+}
+
+body {
+  background: var(--color-netflix-black);
+  color: var(--color-netflix-white);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-netflix-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-netflix-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-netflix-light-gray);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(229, 9, 20, 0.4);
+  color: white;
+}
+
+/* Smooth focus ring for inputs */
+input:focus {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
