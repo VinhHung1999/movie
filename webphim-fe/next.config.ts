@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
         hostname: 'localhost',
         port: '5001',
       },
+      {
+        protocol: 'https',
+        hostname: 'movie-api.hungphu.work',
+      },
     ],
   },
 };
