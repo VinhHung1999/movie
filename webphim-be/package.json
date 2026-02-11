@@ -14,8 +14,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
-    "test:db:setup": "createdb -U phuhung webphim_test 2>/dev/null; DATABASE_URL=postgresql://phuhung:@localhost:5432/webphim_test npx prisma migrate deploy",
-    "test:db:reset": "dropdb -U phuhung webphim_test 2>/dev/null; npm run test:db:setup"
+    "test:db:setup": "createdb -U hungphu webphim_test 2>/dev/null; DATABASE_URL=postgresql://hungphu:@localhost:5432/webphim_test npx prisma migrate deploy",
+    "test:db:reset": "dropdb -U hungphu webphim_test 2>/dev/null; npm run test:db:setup"
   },
   "keywords": [],
   "author": "WebPhim Team",
