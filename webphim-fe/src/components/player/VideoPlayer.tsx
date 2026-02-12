@@ -32,12 +32,18 @@ export default function VideoPlayer({
   const {
     videoRef,
     containerRef,
+    isPlaying,
     isBuffering,
     error,
     duration,
     seek,
     retry,
   } = player;
+
+  // Show spinner until video starts playing for the first time
+  const hasPlayedRef = useRef(false);
+  if (isPlaying) hasPlayedRef.current = true;
+  const showSpinner = (!hasPlayedRef.current || isBuffering) && !error;
 
   // Seek to initial progress once duration is loaded
   const seekedRef = useRef(false);
@@ -64,8 +70,8 @@ export default function VideoPlayer({
         title={title}
       />
 
-      {/* Buffering Spinner */}
-      {isBuffering && !error && (
+      {/* Loading / Buffering Spinner */}
+      {showSpinner && (
         <div
           data-testid="buffering-spinner"
           className="pointer-events-none absolute inset-0 flex items-center justify-center"

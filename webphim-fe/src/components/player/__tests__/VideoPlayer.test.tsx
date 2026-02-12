@@ -90,24 +90,27 @@ describe('VideoPlayer', () => {
     expect(screen.queryByTestId('error-overlay')).not.toBeInTheDocument();
   });
 
-  it('does not show buffering spinner when not buffering', () => {
+  it('shows loading spinner before video starts playing', () => {
     render(<VideoPlayer {...defaultProps} />);
-    expect(screen.queryByTestId('buffering-spinner')).not.toBeInTheDocument();
-  });
-
-  it('shows buffering spinner when video is waiting', () => {
-    render(<VideoPlayer {...defaultProps} />);
-
-    const video = screen.getByTestId('video-element');
-    fireEvent.waiting(video);
-
     expect(screen.getByTestId('buffering-spinner')).toBeInTheDocument();
   });
 
-  it('hides buffering spinner when canplay fires', () => {
+  it('hides spinner after video starts playing', () => {
+    render(<VideoPlayer {...defaultProps} />);
+    expect(screen.getByTestId('buffering-spinner')).toBeInTheDocument();
+
+    const video = screen.getByTestId('video-element');
+    fireEvent.play(video);
+    expect(screen.queryByTestId('buffering-spinner')).not.toBeInTheDocument();
+  });
+
+  it('shows spinner again when buffering during playback', () => {
     render(<VideoPlayer {...defaultProps} />);
 
     const video = screen.getByTestId('video-element');
+    fireEvent.play(video);
+    expect(screen.queryByTestId('buffering-spinner')).not.toBeInTheDocument();
+
     fireEvent.waiting(video);
     expect(screen.getByTestId('buffering-spinner')).toBeInTheDocument();
 
