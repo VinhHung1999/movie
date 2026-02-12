@@ -84,17 +84,17 @@ export default function ContentRow({ title, items, ranked = false }: ContentRowP
                 {ranked ? (
                   <div
                     data-testid={`ranked-card-${index + 1}`}
-                    className="flex cursor-pointer items-end gap-0"
+                    className="relative flex cursor-pointer items-end"
                     onClick={() => setPreviewId(item.id)}
                   >
                     <span
-                      className="flex-shrink-0 select-none text-right font-black italic leading-[0.75] text-neutral-800 [-webkit-text-stroke:3px_rgba(255,255,255,0.3)] text-[100px] sm:text-[130px] md:text-[160px]"
+                      className="z-10 flex-shrink-0 select-none text-right font-black italic leading-[0.75] text-neutral-800 [-webkit-text-stroke:3px_rgba(255,255,255,0.4)] text-[100px] sm:text-[130px] md:text-[160px]"
                       style={{ minWidth: '0.6em' }}
                       aria-hidden="true"
                     >
                       {index + 1}
                     </span>
-                    <div className="-ml-2 w-[55%] flex-shrink-0 sm:w-[50%]">
+                    <div className="w-[55%] flex-shrink-0 sm:w-[50%]">
                       <MovieCard item={item} onOpenPreview={() => setPreviewId(item.id)} />
                     </div>
                   </div>
