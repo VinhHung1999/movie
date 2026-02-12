@@ -28,6 +28,8 @@ function createMockPlayer(overrides?: Partial<UseVideoPlayerReturn>): UseVideoPl
     qualities: [],
     currentQuality: -1,
     setQuality: vi.fn(),
+    playbackSpeed: 1,
+    setSpeed: vi.fn(),
     play: vi.fn(),
     pause: vi.fn(),
     togglePlay: vi.fn(),

@@ -60,4 +60,29 @@ describe('MovieCard', () => {
     render(<MovieCard item={mockItem} />);
     expect(screen.getByTestId('movie-card-1')).toHaveClass('cursor-pointer');
   });
+
+  it('shows NewBadge when content was created within 30 days', () => {
+    const recentItem = {
+      ...mockItem,
+      createdAt: new Date().toISOString(),
+    };
+    render(<MovieCard item={recentItem} />);
+    expect(screen.getByTestId('new-badge')).toBeInTheDocument();
+  });
+
+  it('does not show NewBadge when content is older than 30 days', () => {
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 60);
+    const oldItem = {
+      ...mockItem,
+      createdAt: oldDate.toISOString(),
+    };
+    render(<MovieCard item={oldItem} />);
+    expect(screen.queryByTestId('new-badge')).not.toBeInTheDocument();
+  });
+
+  it('does not show NewBadge when createdAt is undefined', () => {
+    render(<MovieCard item={mockItem} />);
+    expect(screen.queryByTestId('new-badge')).not.toBeInTheDocument();
+  });
 });

@@ -147,7 +147,7 @@ export default function SearchBar({ className }: SearchBarProps) {
           {isExpanded && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 250, opacity: 1 }}
+              animate={{ width: 280, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="overflow-hidden"

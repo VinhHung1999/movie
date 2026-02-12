@@ -77,7 +77,7 @@ export default function ContinueWatchingRow() {
           {items.map((item) => (
             <div
               key={item.id}
-              className="w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/4.5)] lg:w-[calc((100vw-6rem)/5.5)] xl:w-[calc((100vw-6rem)/6.5)]"
+              className="w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/3.5)] lg:w-[calc((100vw-6rem)/4.5)] xl:w-[calc((100vw-6rem)/6.5)]"
             >
               <button
                 onClick={() => router.push(`/watch/${item.contentId}`)}

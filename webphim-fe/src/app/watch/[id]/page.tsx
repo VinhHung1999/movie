@@ -3,23 +3,63 @@
 // Fetch content + video data, render VideoPlayer với PlayerControls + KeyboardShortcuts.
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { usePlayerStore } from '@/store/player.store';
 import { SWRProvider } from '@/lib/swr-config';
 import VideoPlayer from '@/components/player/VideoPlayer';
 import PlayerControls from '@/components/player/PlayerControls';
+import NextEpisodeOverlay from '@/components/player/NextEpisodeOverlay';
+import type { NextEpisodeInfo } from '@/components/player/NextEpisodeOverlay';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { Loader2 } from 'lucide-react';
 import type { ContentDetail, VideoStatusResponse, UserResponse } from '@/types';
 
+function getNextEpisode(
+  content: ContentDetail | undefined,
+  episodeId: string | null
+): NextEpisodeInfo | null {
+  if (!content?.seasons || !episodeId) return null;
+  for (const season of content.seasons) {
+    const epIndex = season.episodes.findIndex((e) => e.id === episodeId);
+    if (epIndex >= 0) {
+      if (epIndex < season.episodes.length - 1) {
+        const next = season.episodes[epIndex + 1];
+        return {
+          episodeId: next.id,
+          seasonNumber: season.seasonNumber,
+          episodeNumber: next.episodeNumber,
+          title: next.title,
+        };
+      }
+      const nextSeason = content.seasons.find(
+        (s) => s.seasonNumber === season.seasonNumber + 1
+      );
+      if (nextSeason?.episodes.length) {
+        const next = nextSeason.episodes[0];
+        return {
+          episodeId: next.id,
+          seasonNumber: nextSeason.seasonNumber,
+          episodeNumber: next.episodeNumber,
+          title: next.title,
+        };
+      }
+    }
+  }
+  return null;
+}
+
 function WatchPageContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const contentId = params.id as string;
+  const episodeId = searchParams.get('episode');
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
   const serverBase = apiBase.replace(/\/api$/, '');
@@ -60,9 +100,18 @@ function WatchPageContent() {
     : content?.thumbnailUrl || undefined;
   const initialProgress = progressData?.data?.progress;
 
+  // Calculate next episode for series (React Compiler handles memoization)
+  const nextEpisode = getNextEpisode(content, episodeId);
+
   const handleBack = () => {
     router.back();
   };
+
+  const handlePlayNextEpisode = useCallback(() => {
+    if (nextEpisode) {
+      router.push(`/watch/${contentId}?episode=${nextEpisode.episodeId}`);
+    }
+  }, [nextEpisode, contentId, router]);
 
   if (contentError || videoListError || videoError) {
     return (
@@ -92,16 +141,24 @@ function WatchPageContent() {
   return (
     <div className="h-screen w-screen bg-black">
       <VideoPlayer
-        key={contentId}
+        key={`${contentId}-${episodeId ?? ''}`}
         streamUrl={streamUrl}
         title={content.title}
         contentId={contentId}
+        episodeId={episodeId ?? undefined}
         initialProgress={initialProgress}
         thumbnailUrl={thumbnailUrl}
         onBack={handleBack}
       >
         {(player) => (
-          <WatchControls player={player} title={content.title} contentId={contentId} onBack={handleBack} />
+          <WatchControls
+            player={player}
+            title={content.title}
+            contentId={contentId}
+            onBack={handleBack}
+            nextEpisode={nextEpisode}
+            onPlayNextEpisode={handlePlayNextEpisode}
+          />
         )}
       </VideoPlayer>
     </div>
@@ -113,12 +170,19 @@ function WatchControls({
   title,
   contentId,
   onBack,
+  nextEpisode,
+  onPlayNextEpisode,
 }: {
   player: Parameters<NonNullable<React.ComponentProps<typeof VideoPlayer>['children']>>[0];
   title: string;
   contentId: string;
   onBack: () => void;
+  nextEpisode: NextEpisodeInfo | null;
+  onPlayNextEpisode: () => void;
 }) {
+  const [nextEpDismissed, setNextEpDismissed] = useState(false);
+  const autoPlayEnabled = usePlayerStore((s) => s.autoPlayNextEpisode);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     togglePlay: player.togglePlay,
@@ -139,7 +203,28 @@ function WatchControls({
     isPlaying: player.isPlaying,
   });
 
-  return <PlayerControls player={player} title={title} onBack={onBack} />;
+  // Show next episode overlay at 95% progress
+  const showNextEpisode =
+    autoPlayEnabled &&
+    !nextEpDismissed &&
+    nextEpisode &&
+    player.duration > 0 &&
+    player.currentTime / player.duration >= 0.95;
+
+  return (
+    <>
+      <PlayerControls player={player} title={title} onBack={onBack} />
+      <AnimatePresence>
+        {showNextEpisode && nextEpisode && (
+          <NextEpisodeOverlay
+            nextEpisode={nextEpisode}
+            onPlay={onPlayNextEpisode}
+            onCancel={() => setNextEpDismissed(true)}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
 }
 
 export default function WatchPage() {

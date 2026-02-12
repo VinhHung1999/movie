@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type HlsType from 'hls.js';
+import { usePlayerStore } from '@/store/player.store';
 
 export interface QualityLevel {
   height: number;
@@ -35,6 +36,9 @@ export interface UseVideoPlayerReturn {
   currentQuality: number;
   setQuality: (index: number) => void;
 
+  playbackSpeed: number;
+  setSpeed: (speed: number) => void;
+
   play: () => void;
   pause: () => void;
   togglePlay: () => void;
@@ -61,6 +65,7 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
   const [buffered, setBuffered] = useState<BufferedRange[]>([]);
   const [qualities, setQualities] = useState<QualityLevel[]>([]);
   const [currentQuality, setCurrentQuality] = useState(-1); // -1 = auto
+  const [playbackSpeed, setPlaybackSpeedState] = useState(1);
 
   // Setup hls.js with dynamic import (SSR-safe)
   useEffect(() => {
@@ -205,6 +210,17 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
     };
   }, []);
 
+  // Initialize volume + speed from persisted player store
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const store = usePlayerStore.getState();
+    video.volume = store.volume;
+    video.muted = store.isMuted;
+    video.playbackRate = store.playbackSpeed;
+    setPlaybackSpeedState(store.playbackSpeed);
+  }, []);
+
   // Fullscreen change listener
   useEffect(() => {
     const onChange = () => {
@@ -241,16 +257,29 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
   const setVolume = useCallback((vol: number) => {
     const video = videoRef.current;
     if (!video) return;
-    video.volume = Math.max(0, Math.min(1, vol));
-    if (vol > 0 && video.muted) {
+    const clamped = Math.max(0, Math.min(1, vol));
+    video.volume = clamped;
+    if (clamped > 0 && video.muted) {
       video.muted = false;
     }
+    usePlayerStore.getState().setVolume(clamped);
+    usePlayerStore.getState().setMuted(clamped > 0 ? false : video.muted);
   }, []);
 
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     video.muted = !video.muted;
+    usePlayerStore.getState().setMuted(video.muted);
+  }, []);
+
+  const setSpeed = useCallback((speed: number) => {
+    const video = videoRef.current;
+    if (video) {
+      video.playbackRate = speed;
+      setPlaybackSpeedState(speed);
+      usePlayerStore.getState().setPlaybackSpeed(speed);
+    }
   }, []);
 
   const toggleFullscreen = useCallback(() => {
@@ -299,6 +328,8 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
     qualities,
     currentQuality,
     setQuality,
+    playbackSpeed,
+    setSpeed,
     play,
     pause,
     togglePlay,

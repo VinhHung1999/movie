@@ -9,6 +9,7 @@ import { Play, Pause, Maximize, Minimize, ArrowLeft } from 'lucide-react';
 import ProgressBar from './ProgressBar';
 import VolumeControl from './VolumeControl';
 import QualitySelector from './QualitySelector';
+import SpeedSelector from './SpeedSelector';
 import type { UseVideoPlayerReturn } from '@/hooks/useVideoPlayer';
 
 interface PlayerControlsProps {
@@ -47,6 +48,8 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
     qualities,
     currentQuality,
     setQuality,
+    playbackSpeed,
+    setSpeed,
   } = player;
 
   // visible tracks user interaction (mouse move). Controls show if visible OR paused.
@@ -213,6 +216,12 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
 
                 {/* Spacer */}
                 <div className="flex-1" />
+
+                {/* Speed Selector */}
+                <SpeedSelector
+                  currentSpeed={playbackSpeed}
+                  onSelect={setSpeed}
+                />
 
                 {/* Quality Selector */}
                 <QualitySelector

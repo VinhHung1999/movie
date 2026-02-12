@@ -59,6 +59,7 @@ export interface ContentSummary {
   bannerUrl: string | null;
   viewCount: number;
   genres: Genre[];
+  createdAt?: string;
 }
 
 export interface CastMember {

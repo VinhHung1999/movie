@@ -77,8 +77,8 @@ export default function ContentRow({ title, items, ranked = false }: ContentRowP
                 key={item.id}
                 className={
                   ranked
-                    ? 'w-[calc((100vw-2rem)/1.8)] flex-shrink-0 sm:w-[calc((100vw-2rem)/2.5)] md:w-[calc((100vw-6rem)/3.2)] lg:w-[calc((100vw-6rem)/4)] xl:w-[calc((100vw-6rem)/4.8)]'
-                    : 'w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/4.5)] lg:w-[calc((100vw-6rem)/5.5)] xl:w-[calc((100vw-6rem)/6.5)]'
+                    ? 'w-[calc((100vw-2rem)/1.8)] flex-shrink-0 sm:w-[calc((100vw-2rem)/2.5)] md:w-[calc((100vw-6rem)/2.5)] lg:w-[calc((100vw-6rem)/3.2)] xl:w-[calc((100vw-6rem)/4.8)]'
+                    : 'w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/3.5)] lg:w-[calc((100vw-6rem)/4.5)] xl:w-[calc((100vw-6rem)/6.5)]'
                 }
               >
                 {ranked ? (
