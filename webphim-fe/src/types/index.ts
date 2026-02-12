@@ -3,6 +3,7 @@ export interface UserResponse {
   email: string;
   name: string;
   avatar: string | null;
+  role: string;
   createdAt: string;
 }
 
@@ -265,4 +266,49 @@ export interface VideoStatusResponse {
   progress: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================
+// Admin Types (Sprint 12)
+// ============================================
+
+export interface AdminStats {
+  totalUsers: number;
+  totalContent: number;
+  totalMovies: number;
+  totalSeries: number;
+  totalViews: number;
+  totalVideos: number;
+  videosCompleted: number;
+  videosProcessing: number;
+  videosFailed: number;
+}
+
+export interface AdminContentItem {
+  id: string;
+  type: ContentType;
+  title: string;
+  releaseYear: number;
+  maturityRating: MaturityRating;
+  duration: number | null;
+  viewCount: number;
+  hasVideo: boolean;
+  videoStatus: string | null;
+  genreNames: string[];
+  createdAt: string;
+}
+
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  profileCount: number;
+  createdAt: string;
+}
+
+export interface CastCrewItem {
+  id: string;
+  name: string;
+  photoUrl: string | null;
 }
