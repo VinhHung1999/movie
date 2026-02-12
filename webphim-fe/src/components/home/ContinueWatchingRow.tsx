@@ -1,9 +1,8 @@
 'use client';
 
-import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { motion, useMotionValue } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import type { ContinueWatchingItem } from '@/types';
 
@@ -22,48 +21,22 @@ export default function ContinueWatchingRow() {
 
   const items = useMemo(() => data?.data ?? [], [data]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const x = useMotionValue(0);
 
-  useEffect(() => {
-    const updateWidths = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-        setContentWidth(containerRef.current.scrollWidth);
-      }
-    };
-    updateWidths();
-    window.addEventListener('resize', updateWidths);
-    return () => window.removeEventListener('resize', updateWidths);
-  }, [items]);
-
-  const maxDrag = Math.min(0, -(contentWidth - containerWidth));
-
-  const updateScrollState = useCallback(
-    (currentX: number) => {
-      setCanScrollLeft(currentX < -10);
-      setCanScrollRight(currentX > maxDrag + 10);
-    },
-    [maxDrag],
-  );
-
-  useEffect(() => {
-    const unsubscribe = x.on('change', updateScrollState);
-    return unsubscribe;
-  }, [x, updateScrollState]);
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  }, []);
 
   const scroll = (direction: 'left' | 'right') => {
-    const scrollAmount = containerWidth * 0.8;
-    const currentX = x.get();
-    const newX =
-      direction === 'right'
-        ? Math.max(maxDrag, currentX - scrollAmount)
-        : Math.min(0, currentX + scrollAmount);
-    x.set(newX);
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.8;
+    el.scrollBy({ left: direction === 'right' ? amount : -amount, behavior: 'smooth' });
   };
 
   if (isLoading || items.length === 0) return null;
@@ -74,11 +47,11 @@ export default function ContinueWatchingRow() {
         Continue Watching
       </h2>
 
-      <div className="relative overflow-x-clip overflow-y-visible">
+      <div className="relative">
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-0 z-20 flex h-full w-10 cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 md:w-12"
+            className="absolute left-0 top-0 z-20 hidden h-full w-12 cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 md:flex"
             aria-label="Scroll left"
           >
             <ChevronLeft size={28} className="text-white" />
@@ -88,21 +61,18 @@ export default function ContinueWatchingRow() {
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-0 z-20 flex h-full w-10 cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 md:w-12"
+            className="absolute right-0 top-0 z-20 hidden h-full w-12 cursor-pointer items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 md:flex"
             aria-label="Scroll right"
           >
             <ChevronRight size={28} className="text-white" />
           </button>
         )}
 
-        <motion.div
-          ref={containerRef}
-          className="flex gap-1 px-4 md:px-12"
-          drag="x"
-          style={{ x }}
-          dragConstraints={{ left: maxDrag, right: 0 }}
-          dragElastic={0.1}
-          dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
+        <div
+          ref={scrollRef}
+          className="flex gap-1 overflow-x-auto px-4 scrollbar-hide md:px-12"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          onScroll={updateScrollState}
         >
           {items.map((item) => (
             <div
@@ -161,7 +131,7 @@ export default function ContinueWatchingRow() {
               </p>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
