@@ -96,15 +96,19 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
               label: `${l.height}p`,
             }))
           );
-          // Auto-play after manifest is ready
-          video.play().catch(() => {
-            // Browser autoplay policy may block unmuted autoplay.
-            // Fallback: try muted autoplay (always allowed by browsers)
-            video.muted = true;
+          // Auto-play: wait for canplay to avoid "play() interrupted" error
+          const attemptPlay = () => {
+            if (destroyed) return;
             video.play().catch(() => {
-              // If even muted autoplay fails, user must click Play manually
+              video.muted = true;
+              video.play().catch(() => {});
             });
-          });
+          };
+          if (video.readyState >= 3) {
+            attemptPlay();
+          } else {
+            video.addEventListener('canplay', attemptPlay, { once: true });
+          }
         });
 
         hls.on(Hls.Events.ERROR, (_, data) => {
@@ -126,7 +130,7 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari native HLS
         video.src = streamUrl;
-        video.addEventListener('loadedmetadata', () => {
+        video.addEventListener('canplay', () => {
           if (destroyed) return;
           video.play().catch(() => {
             video.muted = true;

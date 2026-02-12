@@ -37,6 +37,7 @@ export default function VideoPlayer({
     duration,
     seek,
     retry,
+    togglePlay,
   } = player;
 
   // Seek to initial progress once duration is loaded
@@ -54,14 +55,15 @@ export default function VideoPlayer({
       data-testid="video-player-container"
       className="relative h-full w-full bg-black"
     >
-      {/* Video Element */}
+      {/* Video Element — click/tap toggles play/pause */}
       <video
         ref={videoRef}
         data-testid="video-element"
-        className="h-full w-full"
+        className="h-full w-full cursor-pointer"
         playsInline
         poster={thumbnailUrl}
         title={title}
+        onClick={togglePlay}
       />
 
       {/* Buffering Spinner */}
