@@ -11,7 +11,7 @@ import SimilarTitles from '@/components/detail/SimilarTitles';
 function DetailSkeleton() {
   return (
     <div data-testid="detail-skeleton">
-      <div className="h-[60vh] w-full animate-pulse bg-neutral-800" />
+      <div className="h-[45vh] w-full animate-pulse bg-neutral-800 md:h-[60vh]" />
       <div className="space-y-4 p-4 md:p-12">
         <div className="h-8 w-2/3 animate-pulse rounded bg-neutral-800" />
         <div className="h-4 w-full animate-pulse rounded bg-neutral-800" />
@@ -52,9 +52,9 @@ export default function ContentDetailPage() {
       <ContentHero content={content} />
 
       {/* Content info */}
-      <div className="space-y-6 px-4 py-6 md:px-12">
+      <div className="space-y-4 px-4 py-3 md:space-y-6 md:px-12 md:py-6">
         {/* Synopsis */}
-        <p className="max-w-3xl text-base text-neutral-300">{content.description}</p>
+        <p className="max-w-3xl text-sm text-neutral-300 md:text-base">{content.description}</p>
 
         {/* Cast & crew */}
         <CastList cast={content.cast} variant="full" />
