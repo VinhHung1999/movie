@@ -45,6 +45,7 @@ export default function MovieCard({ item, compact = false, onOpenPreview }: Movi
     <motion.div
       data-testid={`movie-card-${item.id}`}
       className="relative flex-shrink-0 cursor-pointer"
+      onClick={() => router.push(`/title/${item.id}`)}
       onPointerEnter={handleHoverStart}
       onPointerLeave={handleHoverEnd}
       animate={{
@@ -83,7 +84,7 @@ export default function MovieCard({ item, compact = false, onOpenPreview }: Movi
             {/* Action buttons */}
             <div className="mb-2 flex items-center gap-2">
               <button
-                onClick={() => router.push(`/watch/${item.id}`)}
+                onClick={(e) => { e.stopPropagation(); router.push(`/watch/${item.id}`); }}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black transition-colors hover:bg-white/80"
               >
                 <Play size={14} fill="currentColor" />

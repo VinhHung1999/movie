@@ -3,6 +3,13 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import MovieCard from '../MovieCard';
 import { ContentSummary } from '@/types';
 
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const mockItem: ContentSummary = {
   id: '1',
   type: 'MOVIE',
@@ -41,6 +48,7 @@ function triggerHover(testId: string) {
 describe('MovieCard', () => {
   afterEach(() => {
     vi.useRealTimers();
+    mockPush.mockClear();
   });
 
   it('renders poster image when thumbnailUrl is provided', () => {
@@ -89,5 +97,27 @@ describe('MovieCard', () => {
     triggerHover('movie-card-1');
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(3);
+  });
+
+  it('navigates to /title/[id] when card is clicked (mobile tap)', () => {
+    render(<MovieCard item={mockItem} />);
+    const card = screen.getByTestId('movie-card-1');
+    fireEvent.click(card);
+    expect(mockPush).toHaveBeenCalledWith('/title/1');
+  });
+
+  it('play button navigates to /watch/[id] without triggering card navigation', () => {
+    render(<MovieCard item={mockItem} />);
+    triggerHover('movie-card-1');
+
+    // Find the play button (first button rendered)
+    const buttons = screen.getAllByRole('button');
+    const playButton = buttons[0];
+    fireEvent.click(playButton);
+
+    // Play button should navigate to /watch/1
+    expect(mockPush).toHaveBeenCalledWith('/watch/1');
+    // Should NOT also navigate to /title/1 (stopPropagation)
+    expect(mockPush).toHaveBeenCalledTimes(1);
   });
 });
