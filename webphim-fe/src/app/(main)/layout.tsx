@@ -46,12 +46,14 @@ export default function AuthenticatedLayout({ children }: { children: React.Reac
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redirect to profile selector if authenticated but no active profile
+  // Skip for /profiles and /admin/* (admin doesn't need profile selection)
   const isProfilePage = pathname?.startsWith('/profiles');
+  const isAdminPage = pathname?.startsWith('/admin');
   useEffect(() => {
-    if (!isRestoring && isAuthenticated && !activeProfile && !isProfilePage) {
+    if (!isRestoring && isAuthenticated && !activeProfile && !isProfilePage && !isAdminPage) {
       router.push('/profiles');
     }
-  }, [isRestoring, isAuthenticated, activeProfile, isProfilePage, router]);
+  }, [isRestoring, isAuthenticated, activeProfile, isProfilePage, isAdminPage, router]);
 
   if (isRestoring) {
     return (
