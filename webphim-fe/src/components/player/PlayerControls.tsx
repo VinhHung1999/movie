@@ -53,6 +53,10 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
   const [interacted, setInteracted] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Brief play/pause icon feedback
+  const [tapIcon, setTapIcon] = useState<'play' | 'pause' | null>(null);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const showControls = useCallback(() => {
     setInteracted(true);
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -72,6 +76,22 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
   // Show controls when paused OR when user recently interacted
   const visible = !isPlaying || interacted;
 
+  const handleTapToggle = useCallback(() => {
+    // Show the icon for the action being taken (play if currently paused, pause if currently playing)
+    const icon = isPlaying ? 'pause' : 'play';
+    setTapIcon(icon);
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => setTapIcon(null), 700);
+    togglePlay();
+    showControls();
+  }, [isPlaying, togglePlay, showControls]);
+
+  useEffect(() => {
+    return () => {
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    };
+  }, []);
+
   return (
     <div
       data-testid="player-controls"
@@ -80,9 +100,38 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
       onMouseLeave={() => {
         if (isPlaying) setInteracted(false);
       }}
-      onClick={togglePlay}
       style={{ cursor: visible ? 'default' : 'none' }}
     >
+      {/* Full-screen tap target for play/pause toggle */}
+      <div
+        data-testid="tap-area"
+        className="absolute inset-0 z-0"
+        onClick={handleTapToggle}
+      />
+
+      {/* Tap icon feedback — large icon in center */}
+      <AnimatePresence>
+        {tapIcon && (
+          <motion.div
+            key={tapIcon}
+            data-testid="tap-icon"
+            initial={{ opacity: 0.9, scale: 1 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
+          >
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/50">
+              {tapIcon === 'pause' ? (
+                <Pause className="h-10 w-10 text-white" />
+              ) : (
+                <Play className="h-10 w-10 text-white" />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {visible && (
           <motion.div
@@ -91,11 +140,13 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 flex flex-col justify-between"
-            onClick={(e) => e.stopPropagation()}
+            className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between"
           >
             {/* Top Bar - gradient overlay */}
-            <div className="bg-gradient-to-b from-black/70 to-transparent px-4 pb-8 pt-4">
+            <div
+              className="pointer-events-auto bg-gradient-to-b from-black/70 to-transparent px-4 pb-8 pt-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center gap-3">
                 {onBack && (
                   <button
@@ -118,7 +169,10 @@ export default function PlayerControls({ player, title, onBack }: PlayerControls
             </div>
 
             {/* Bottom Bar - gradient overlay */}
-            <div className="bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-8">
+            <div
+              className="pointer-events-auto bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-8"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Progress Bar */}
               <ProgressBar
                 currentTime={currentTime}

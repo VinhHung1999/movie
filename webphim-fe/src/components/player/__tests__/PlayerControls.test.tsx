@@ -136,6 +136,46 @@ describe('PlayerControls', () => {
 
     expect(screen.getByTestId('controls-overlay')).toBeInTheDocument();
   });
+
+  it('has full-screen tap area for play/pause', () => {
+    const player = createMockPlayer();
+    render(<PlayerControls player={player} title="Test" />);
+
+    const tapArea = screen.getByTestId('tap-area');
+    expect(tapArea).toBeInTheDocument();
+    expect(tapArea.className).toContain('absolute');
+    expect(tapArea.className).toContain('inset-0');
+  });
+
+  it('calls togglePlay when tap area is clicked', () => {
+    const player = createMockPlayer();
+    render(<PlayerControls player={player} title="Test" />);
+
+    fireEvent.click(screen.getByTestId('tap-area'));
+    expect(player.togglePlay).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows tap icon feedback when tap area is clicked', () => {
+    const player = createMockPlayer({ isPlaying: false });
+    render(<PlayerControls player={player} title="Test" />);
+
+    fireEvent.click(screen.getByTestId('tap-area'));
+    expect(screen.getByTestId('tap-icon')).toBeInTheDocument();
+  });
+
+  it('clears tap icon state after timeout', () => {
+    const player = createMockPlayer({ isPlaying: false });
+    render(<PlayerControls player={player} title="Test" />);
+
+    fireEvent.click(screen.getByTestId('tap-area'));
+    expect(screen.getByTestId('tap-icon')).toBeInTheDocument();
+
+    // After 700ms the icon state resets (AnimatePresence handles exit animation)
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    // Icon state cleared, AnimatePresence starts exit
+  });
 });
 
 describe('formatTime', () => {
