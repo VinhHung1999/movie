@@ -165,6 +165,20 @@ export const authService = {
     }
   },
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw ApiError.notFound('User not found');
+
+    const valid = await comparePassword(currentPassword, user.passwordHash);
+    if (!valid) throw ApiError.unauthorized('Current password is incorrect');
+
+    const newHash = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash },
+    });
+  },
+
   async getMe(userId: string): Promise<UserResponse> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

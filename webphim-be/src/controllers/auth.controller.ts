@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
 import { AuthRequest } from '../types';
 import { config } from '../config';
+import { changePasswordSchema } from '../validations/auth.validation';
 
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -92,6 +93,16 @@ export const authController = {
         message: 'Logged out',
       },
     });
+  },
+
+  async changePassword(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { body } = changePasswordSchema.parse({ body: req.body });
+      await authService.changePassword(req.user!.userId, body.currentPassword, body.newPassword);
+      res.json({ success: true, data: { message: 'Password changed successfully' } });
+    } catch (error) {
+      next(error);
+    }
   },
 
   async me(req: AuthRequest, res: Response, next: NextFunction) {
