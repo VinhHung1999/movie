@@ -4,11 +4,12 @@
 
 import { useState, useCallback } from 'react';
 import { Upload } from 'lucide-react';
+import useSWR from 'swr';
 import UploadDropzone from '@/components/admin/UploadDropzone';
 import UploadProgress from '@/components/admin/UploadProgress';
 import TranscodeStatus from '@/components/admin/TranscodeStatus';
 import { uploadVideo, triggerTranscode } from '@/lib/api';
-import { VideoUploadResponse } from '@/types';
+import { VideoUploadResponse, AdminContentItem, PaginationMeta } from '@/types';
 
 type UploadStage = 'select' | 'metadata' | 'uploading' | 'done';
 
@@ -21,6 +22,11 @@ export default function AdminUploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedVideo, setUploadedVideo] = useState<VideoUploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: contentListData } = useSWR<{ success: true; data: AdminContentItem[]; meta: PaginationMeta }>(
+    '/admin/content?limit=100',
+  );
+  const contentOptions = contentListData?.data ?? [];
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
@@ -150,14 +156,19 @@ export default function AdminUploadPage() {
             >
               Link to Content (optional)
             </label>
-            <input
+            <select
               id="contentId"
-              type="text"
               value={contentId}
               onChange={(e) => setContentId(e.target.value)}
-              placeholder="Content UUID"
-              className="w-full rounded-md border border-netflix-border bg-netflix-gray px-4 py-2.5 text-sm text-netflix-white placeholder:text-netflix-mid-gray focus:border-netflix-light-gray focus:outline-none"
-            />
+              className="w-full rounded-md border border-netflix-border bg-netflix-gray px-4 py-2.5 text-sm text-netflix-white focus:border-netflix-light-gray focus:outline-none"
+            >
+              <option value="">None (standalone upload)</option>
+              {contentOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title} ({c.type}, {c.releaseYear})
+                </option>
+              ))}
+            </select>
           </div>
 
           {error && (
