@@ -96,6 +96,15 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
               label: `${l.height}p`,
             }))
           );
+          // Auto-play after manifest is ready
+          video.play().catch(() => {
+            // Browser autoplay policy may block unmuted autoplay.
+            // Fallback: try muted autoplay (always allowed by browsers)
+            video.muted = true;
+            video.play().catch(() => {
+              // If even muted autoplay fails, user must click Play manually
+            });
+          });
         });
 
         hls.on(Hls.Events.ERROR, (_, data) => {
@@ -117,6 +126,13 @@ export function useVideoPlayer(streamUrl: string): UseVideoPlayerReturn {
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         // Safari native HLS
         video.src = streamUrl;
+        video.addEventListener('loadedmetadata', () => {
+          if (destroyed) return;
+          video.play().catch(() => {
+            video.muted = true;
+            video.play().catch(() => {});
+          });
+        }, { once: true });
       } else {
         setError('HLS is not supported in this browser.');
       }
