@@ -39,11 +39,11 @@ describe('AuthNavbar', () => {
     expect(screen.getByText('My List')).toBeInTheDocument();
   });
 
-  it('renders search and notification icons', () => {
+  it('renders search icon and no notification bell', () => {
     render(<AuthNavbar />);
 
     expect(screen.getByLabelText('Search')).toBeInTheDocument();
-    expect(screen.getByLabelText('Notifications')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Notifications')).not.toBeInTheDocument();
   });
 
   it('has transparent background when not scrolled', () => {

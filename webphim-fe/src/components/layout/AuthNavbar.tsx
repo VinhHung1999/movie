@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import SearchBar from '@/components/search/SearchBar';
 import { clsx } from 'clsx';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
@@ -78,12 +78,9 @@ export default function AuthNavbar() {
           </ul>
         </div>
 
-        {/* Right: Search, Bell, Profile, Hamburger */}
+        {/* Right: Search, Profile, Hamburger */}
         <div className="flex items-center gap-4">
           <SearchBar />
-          <button className="hidden text-netflix-white transition-colors hover:text-white sm:block" aria-label="Notifications">
-            <Bell size={20} />
-          </button>
 
           {/* Profile dropdown */}
           <div className="relative hidden md:block" ref={dropdownRef}>
