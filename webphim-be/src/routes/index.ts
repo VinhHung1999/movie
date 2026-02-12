@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import adminRoutes from './admin.routes';
 import authRoutes from './auth.routes';
 import contentRoutes from './content.routes';
 import genreRoutes from './genre.routes';
@@ -11,6 +12,7 @@ import watchlistRoutes from './watchlist.routes';
 
 const router = Router();
 
+router.use('/admin', adminRoutes);
 router.use('/auth', authRoutes);
 router.use('/content', contentRoutes);
 router.use('/genres', genreRoutes);

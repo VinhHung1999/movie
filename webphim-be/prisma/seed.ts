@@ -22,6 +22,11 @@ async function main() {
       name: 'Boss',
     },
   });
+  // Set Boss as ADMIN
+  await prisma.user.update({
+    where: { email: 'boss@webphim.com' },
+    data: { role: 'ADMIN' },
+  });
   const bossUser = await prisma.user.findUnique({ where: { email: 'boss@webphim.com' } });
   if (bossUser) {
     const existingProfile = await prisma.profile.findFirst({ where: { userId: bossUser.id } });
