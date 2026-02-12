@@ -152,6 +152,7 @@ export default function AuthNavbar() {
         onClose={() => setDrawerOpen(false)}
         navLinks={navLinks}
         user={user}
+        activeProfile={activeProfile}
         onSignOut={handleSignOut}
       />
     </>

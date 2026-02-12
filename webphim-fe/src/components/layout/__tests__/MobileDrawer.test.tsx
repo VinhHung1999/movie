@@ -19,11 +19,20 @@ const mockUser = {
 const mockOnClose = vi.fn();
 const mockOnSignOut = vi.fn();
 
+const mockActiveProfile = {
+  id: 'p1',
+  name: 'Jane Profile',
+  avatarUrl: '#0073E6',
+  isKids: false,
+  createdAt: '',
+};
+
 const defaultProps = {
   isOpen: true,
   onClose: mockOnClose,
   navLinks: mockNavLinks,
   user: mockUser,
+  activeProfile: mockActiveProfile,
   onSignOut: mockOnSignOut,
 };
 
@@ -34,12 +43,12 @@ describe('MobileDrawer', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders nav links and user info when open', () => {
+  it('renders nav links and profile info when open', () => {
     render(<MobileDrawer {...defaultProps} />);
 
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Series')).toBeInTheDocument();
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    expect(screen.getByText('Jane Profile')).toBeInTheDocument();
     expect(screen.getByText('jane@test.com')).toBeInTheDocument();
   });
 
@@ -47,7 +56,7 @@ describe('MobileDrawer', () => {
     render(<MobileDrawer {...defaultProps} isOpen={false} />);
 
     expect(screen.queryByText('Home')).not.toBeInTheDocument();
-    expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jane Profile')).not.toBeInTheDocument();
   });
 
   it('shows close button', () => {
@@ -87,9 +96,16 @@ describe('MobileDrawer', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('shows user avatar initial', () => {
+  it('shows active profile avatar initial', () => {
     render(<MobileDrawer {...defaultProps} />);
 
+    expect(screen.getByText('J')).toBeInTheDocument();
+  });
+
+  it('falls back to user name when no active profile', () => {
+    render(<MobileDrawer {...defaultProps} activeProfile={null} />);
+
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     expect(screen.getByText('J')).toBeInTheDocument();
   });
 

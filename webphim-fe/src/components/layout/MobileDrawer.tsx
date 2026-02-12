@@ -4,17 +4,18 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { type UserResponse } from '@/types';
+import { type UserResponse, type Profile } from '@/types';
 
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   navLinks: Array<{ href: string; label: string }>;
   user: UserResponse | null;
+  activeProfile: Profile | null;
   onSignOut: () => void;
 }
 
-export default function MobileDrawer({ isOpen, onClose, navLinks, user, onSignOut }: MobileDrawerProps) {
+export default function MobileDrawer({ isOpen, onClose, navLinks, user, activeProfile, onSignOut }: MobileDrawerProps) {
   // Lock body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -56,10 +57,13 @@ export default function MobileDrawer({ isOpen, onClose, navLinks, user, onSignOu
             {/* Profile section */}
             {user && (
               <div className="border-b border-netflix-border px-6 pb-4">
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded bg-netflix-red text-lg font-bold text-white">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                <div
+                  className="mb-2 flex h-10 w-10 items-center justify-center rounded text-lg font-bold text-white"
+                  style={{ backgroundColor: activeProfile?.avatarUrl?.startsWith('#') ? activeProfile.avatarUrl : '#E50914' }}
+                >
+                  {(activeProfile?.name ?? user.name ?? 'U').charAt(0).toUpperCase()}
                 </div>
-                <p className="text-sm font-medium text-white">{user.name}</p>
+                <p className="text-sm font-medium text-white">{activeProfile?.name ?? user.name}</p>
                 <p className="text-xs text-netflix-mid-gray">{user.email}</p>
               </div>
             )}
