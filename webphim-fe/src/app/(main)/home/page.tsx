@@ -29,7 +29,7 @@ export default async function HomePage() {
     ]);
 
   const rows = [
-    { title: 'Trending Now', items: trending },
+    { title: 'Trending Now', items: trending, ranked: true },
     { title: 'New Releases', items: newReleases },
     { title: 'Action', items: actionMovies },
     { title: 'Comedy', items: comedyMovies },
@@ -48,7 +48,7 @@ export default async function HomePage() {
         {rows.map((row) =>
           row.items.length > 0 ? (
             <Suspense key={row.title} fallback={<ContentRowSkeleton />}>
-              <ContentRow title={row.title} items={row.items} />
+              <ContentRow title={row.title} items={row.items} ranked={row.ranked} />
             </Suspense>
           ) : null
         )}

@@ -45,4 +45,23 @@ describe('ContentRow', () => {
     const heading = screen.getByRole('heading', { level: 2 });
     expect(heading).toHaveTextContent('Top Rated');
   });
+
+  it('renders rank numbers when ranked prop is true', () => {
+    render(<ContentRow title="Trending Now" items={mockItems} ranked />);
+    expect(screen.getByTestId('ranked-card-1')).toBeInTheDocument();
+    expect(screen.getByTestId('ranked-card-2')).toBeInTheDocument();
+    expect(screen.getByTestId('ranked-card-5')).toBeInTheDocument();
+  });
+
+  it('displays correct rank numbers (1, 2, 3...)', () => {
+    render(<ContentRow title="Trending Now" items={mockItems} ranked />);
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('does not render rank numbers when ranked is false', () => {
+    render(<ContentRow title="New Releases" items={mockItems} />);
+    expect(screen.queryByTestId('ranked-card-1')).not.toBeInTheDocument();
+  });
 });

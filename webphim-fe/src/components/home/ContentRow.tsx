@@ -10,9 +10,10 @@ import PreviewModal from '@/components/detail/PreviewModal';
 interface ContentRowProps {
   title: string;
   items: ContentSummary[];
+  ranked?: boolean;
 }
 
-export default function ContentRow({ title, items }: ContentRowProps) {
+export default function ContentRow({ title, items, ranked = false }: ContentRowProps) {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -100,12 +101,34 @@ export default function ContentRow({ title, items }: ContentRowProps) {
           dragElastic={0.1}
           dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <div
               key={item.id}
-              className="w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/4.5)] lg:w-[calc((100vw-6rem)/5.5)] xl:w-[calc((100vw-6rem)/6.5)]"
+              className={
+                ranked
+                  ? 'w-[calc((100vw-2rem)/1.8)] flex-shrink-0 sm:w-[calc((100vw-2rem)/2.5)] md:w-[calc((100vw-6rem)/3.2)] lg:w-[calc((100vw-6rem)/4)] xl:w-[calc((100vw-6rem)/4.8)]'
+                  : 'w-[calc((100vw-2rem)/2.5)] flex-shrink-0 sm:w-[calc((100vw-2rem)/3.5)] md:w-[calc((100vw-6rem)/4.5)] lg:w-[calc((100vw-6rem)/5.5)] xl:w-[calc((100vw-6rem)/6.5)]'
+              }
             >
-              <MovieCard item={item} onOpenPreview={() => setPreviewId(item.id)} />
+              {ranked ? (
+                <div
+                  data-testid={`ranked-card-${index + 1}`}
+                  className="flex cursor-pointer items-end"
+                  onClick={() => setPreviewId(item.id)}
+                >
+                  <span
+                    className="select-none font-black leading-none text-transparent [-webkit-text-stroke:2px_rgba(128,128,128,0.5)] text-[120px] sm:text-[140px] md:text-[160px]"
+                    aria-hidden="true"
+                  >
+                    {index + 1}
+                  </span>
+                  <div className="-ml-6 w-[60%] flex-shrink-0 sm:-ml-8">
+                    <MovieCard item={item} onOpenPreview={() => setPreviewId(item.id)} />
+                  </div>
+                </div>
+              ) : (
+                <MovieCard item={item} onOpenPreview={() => setPreviewId(item.id)} />
+              )}
             </div>
           ))}
         </motion.div>
