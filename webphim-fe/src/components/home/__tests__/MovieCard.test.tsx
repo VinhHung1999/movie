@@ -1,11 +1,10 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import MovieCard from '../MovieCard';
 import { ContentSummary } from '@/types';
 
-const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -24,8 +23,6 @@ const mockItem: ContentSummary = {
   genres: [
     { id: 'g1', name: 'Action', slug: 'action' },
     { id: 'g2', name: 'Sci-Fi', slug: 'sci-fi' },
-    { id: 'g3', name: 'Drama', slug: 'drama' },
-    { id: 'g4', name: 'Thriller', slug: 'thriller' },
   ],
 };
 
@@ -36,21 +33,7 @@ const mockItemNoImage: ContentSummary = {
   thumbnailUrl: null,
 };
 
-function triggerHover(testId: string) {
-  vi.useFakeTimers();
-  const card = screen.getByTestId(testId);
-  fireEvent.pointerEnter(card);
-  act(() => {
-    vi.advanceTimersByTime(350);
-  });
-}
-
 describe('MovieCard', () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    mockPush.mockClear();
-  });
-
   it('renders poster image when thumbnailUrl is provided', () => {
     render(<MovieCard item={mockItem} />);
     expect(screen.getByAltText('Test Movie')).toBeInTheDocument();
@@ -61,63 +44,20 @@ describe('MovieCard', () => {
     expect(screen.getByText('No Image Movie')).toBeInTheDocument();
   });
 
-  it('does not show hover overlay by default', () => {
-    render(<MovieCard item={mockItem} />);
-    expect(screen.queryByText('PG13')).not.toBeInTheDocument();
+  it('calls onOpenPreview when card is clicked', () => {
+    const onOpenPreview = vi.fn();
+    render(<MovieCard item={mockItem} onOpenPreview={onOpenPreview} />);
+    fireEvent.click(screen.getByTestId('movie-card-1'));
+    expect(onOpenPreview).toHaveBeenCalledTimes(1);
   });
 
-  it('shows hover overlay with meta info after pointer enter + delay', () => {
+  it('does not throw when clicked without onOpenPreview', () => {
     render(<MovieCard item={mockItem} />);
-    triggerHover('movie-card-1');
-    expect(screen.getByText('PG13')).toBeInTheDocument();
-    expect(screen.getByText('2025')).toBeInTheDocument();
-    expect(screen.getByText('2h 22m')).toBeInTheDocument();
+    expect(() => fireEvent.click(screen.getByTestId('movie-card-1'))).not.toThrow();
   });
 
-  it('shows only first 3 genre tags in overlay', () => {
+  it('has cursor-pointer class', () => {
     render(<MovieCard item={mockItem} />);
-    triggerHover('movie-card-1');
-    expect(screen.getByText('Action \u2022 Sci-Fi \u2022 Drama')).toBeInTheDocument();
-    expect(screen.queryByText(/Thriller/)).not.toBeInTheDocument();
-  });
-
-  it('does not expand when compact prop is true', () => {
-    vi.useFakeTimers();
-    render(<MovieCard item={mockItem} compact />);
-    const card = screen.getByTestId('movie-card-1');
-    fireEvent.pointerEnter(card);
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    expect(screen.queryByText('PG13')).not.toBeInTheDocument();
-  });
-
-  it('renders 3 action buttons in hover overlay', () => {
-    render(<MovieCard item={mockItem} />);
-    triggerHover('movie-card-1');
-    const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(3);
-  });
-
-  it('navigates to /title/[id] when card is clicked (mobile tap)', () => {
-    render(<MovieCard item={mockItem} />);
-    const card = screen.getByTestId('movie-card-1');
-    fireEvent.click(card);
-    expect(mockPush).toHaveBeenCalledWith('/title/1');
-  });
-
-  it('play button navigates to /watch/[id] without triggering card navigation', () => {
-    render(<MovieCard item={mockItem} />);
-    triggerHover('movie-card-1');
-
-    // Find the play button (first button rendered)
-    const buttons = screen.getAllByRole('button');
-    const playButton = buttons[0];
-    fireEvent.click(playButton);
-
-    // Play button should navigate to /watch/1
-    expect(mockPush).toHaveBeenCalledWith('/watch/1');
-    // Should NOT also navigate to /title/1 (stopPropagation)
-    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('movie-card-1')).toHaveClass('cursor-pointer');
   });
 });

@@ -164,6 +164,21 @@ describe('PreviewModal', () => {
     expect(screen.queryByTestId('mute-toggle')).not.toBeInTheDocument();
   });
 
+  it('renders View Details button', async () => {
+    renderModal({ contentId: 'c1', isOpen: true, onClose });
+    await screen.findByText('Test Movie');
+    expect(screen.getByTestId('view-details-button')).toBeInTheDocument();
+    expect(screen.getByText('View Details')).toBeInTheDocument();
+  });
+
+  it('navigates to /title/[id] on View Details click', async () => {
+    renderModal({ contentId: 'c1', isOpen: true, onClose });
+    await screen.findByText('Test Movie');
+    fireEvent.click(screen.getByTestId('view-details-button'));
+    expect(mockPush).toHaveBeenCalledWith('/title/c1');
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('renders episode list for series content', async () => {
     renderModal({ contentId: 'c2', isOpen: true, onClose }, mockSeriesContent);
     expect(await screen.findByText('Test Series')).toBeInTheDocument();

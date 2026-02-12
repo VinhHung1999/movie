@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import useSWR from 'swr';
 import { SimilarContentResponse } from '@/types';
 import MovieCard from '@/components/home/MovieCard';
+import PreviewModal from '@/components/detail/PreviewModal';
 
 interface SimilarTitlesProps {
   contentId: string;
@@ -13,6 +15,7 @@ function SkeletonCard() {
 }
 
 export default function SimilarTitles({ contentId }: SimilarTitlesProps) {
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const { data, isLoading } = useSWR<SimilarContentResponse>(
     `/content/${contentId}/similar`
   );
@@ -34,13 +37,20 @@ export default function SimilarTitles({ contentId }: SimilarTitlesProps) {
   if (!items || items.length === 0) return null;
 
   return (
-    <div data-testid="similar-titles" className="px-4 py-3">
-      <h3 className="mb-3 text-lg font-bold text-white">More Like This</h3>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {items.map((item) => (
-          <MovieCard key={item.id} item={item} compact />
-        ))}
+    <>
+      <div data-testid="similar-titles" className="px-4 py-3">
+        <h3 className="mb-3 text-lg font-bold text-white">More Like This</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {items.map((item) => (
+            <MovieCard key={item.id} item={item} onOpenPreview={() => setPreviewId(item.id)} />
+          ))}
+        </div>
       </div>
-    </div>
+      <PreviewModal
+        contentId={previewId!}
+        isOpen={!!previewId}
+        onClose={() => setPreviewId(null)}
+      />
+    </>
   );
 }

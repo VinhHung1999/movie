@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Play, Volume2, VolumeX, X } from 'lucide-react';
+import { Play, Volume2, VolumeX, X, Info } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { ContentDetail } from '@/types';
 import ContentMeta from './ContentMeta';
@@ -97,6 +97,17 @@ export default function ModalContent({ content, onClose, onPlay }: ModalContentP
                 className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-neutral-500 text-white transition-colors hover:border-white"
               />
               <RatingButtons contentId={content.id} />
+              <button
+                data-testid="view-details-button"
+                onClick={() => {
+                  router.push(`/title/${content.id}`);
+                  onClose?.();
+                }}
+                className="flex items-center gap-1.5 rounded bg-neutral-600/80 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-500/80"
+              >
+                <Info size={16} />
+                View Details
+              </button>
             </div>
           </div>
 

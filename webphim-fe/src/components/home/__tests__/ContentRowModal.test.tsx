@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SWRConfig } from 'swr';
 import ContentRow from '../ContentRow';
 import { ContentSummary, ContentDetail } from '@/types';
@@ -48,15 +48,6 @@ const mockDetail: ContentDetail = {
   ],
 };
 
-function triggerHoverOnCard(cardTestId: string) {
-  vi.useFakeTimers();
-  const card = screen.getByTestId(cardTestId);
-  fireEvent.pointerEnter(card);
-  act(() => {
-    vi.advanceTimersByTime(350);
-  });
-}
-
 function renderRow() {
   const fetcher = (url: string) => {
     if (url.includes('/similar')) return Promise.resolve({ success: true, data: [] });
@@ -70,33 +61,23 @@ function renderRow() {
   );
 }
 
-describe('QA: ContentRow → PreviewModal integration', () => {
+describe('ContentRow → PreviewModal integration', () => {
   afterEach(() => {
-    vi.useRealTimers();
+    mockPush.mockClear();
   });
 
-  it('opens PreviewModal when ChevronDown is clicked on a card', async () => {
+  it('opens PreviewModal when card is clicked', async () => {
     renderRow();
-    triggerHoverOnCard('movie-card-item-1');
-
-    fireEvent.click(screen.getByTestId('chevron-down-item-1'));
-    vi.useRealTimers();
-
-    // Modal should appear (content rendering is verified by PreviewModal.test.tsx)
+    fireEvent.click(screen.getByTestId('movie-card-item-1'));
     expect(await screen.findByTestId('preview-modal')).toBeInTheDocument();
   });
 
   it('closes PreviewModal when backdrop is clicked', async () => {
     renderRow();
-    triggerHoverOnCard('movie-card-item-1');
-
-    fireEvent.click(screen.getByTestId('chevron-down-item-1'));
-    vi.useRealTimers();
-
+    fireEvent.click(screen.getByTestId('movie-card-item-1'));
     await screen.findByTestId('preview-modal');
 
     fireEvent.click(screen.getByTestId('modal-backdrop'));
-    // After closing, modal should disappear
     await vi.waitFor(() => {
       expect(screen.queryByTestId('preview-modal')).not.toBeInTheDocument();
     });
@@ -104,11 +85,7 @@ describe('QA: ContentRow → PreviewModal integration', () => {
 
   it('closes PreviewModal on Escape key', async () => {
     renderRow();
-    triggerHoverOnCard('movie-card-item-1');
-
-    fireEvent.click(screen.getByTestId('chevron-down-item-1'));
-    vi.useRealTimers();
-
+    fireEvent.click(screen.getByTestId('movie-card-item-1'));
     await screen.findByTestId('preview-modal');
 
     fireEvent.keyDown(document, { key: 'Escape' });
