@@ -68,7 +68,7 @@ export default function ContentRow({ title, items, ranked = false }: ContentRowP
           <div
             ref={scrollRef}
             data-testid="content-row-scroll"
-            className="flex gap-1 overflow-x-auto px-4 scrollbar-hide md:px-12"
+            className="flex gap-1 overflow-x-auto overflow-y-hidden px-4 scrollbar-hide md:px-12"
             style={{ WebkitOverflowScrolling: 'touch' }}
             onScroll={updateScrollState}
           >
