@@ -5,6 +5,7 @@ export interface UserResponse {
   email: string;
   name: string;
   avatar: string | null;
+  role: string;
   createdAt: Date;
 }
 

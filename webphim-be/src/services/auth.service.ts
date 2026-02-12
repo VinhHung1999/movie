@@ -11,6 +11,7 @@ function sanitizeUser(user: {
   email: string;
   name: string;
   avatar: string | null;
+  role: string;
   createdAt: Date;
 }): UserResponse {
   return {
@@ -18,6 +19,7 @@ function sanitizeUser(user: {
     email: user.email,
     name: user.name,
     avatar: user.avatar,
+    role: user.role,
     createdAt: user.createdAt,
   };
 }
