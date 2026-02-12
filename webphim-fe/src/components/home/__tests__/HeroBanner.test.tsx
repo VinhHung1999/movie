@@ -1,7 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import HeroBanner from '../HeroBanner';
 import { FeaturedContent } from '@/types';
+
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const mockFeatured: FeaturedContent = {
   id: 'f1',
@@ -21,6 +28,10 @@ const mockFeatured: FeaturedContent = {
 };
 
 describe('HeroBanner', () => {
+  afterEach(() => {
+    mockPush.mockClear();
+  });
+
   it('renders fallback when featured is null', () => {
     render(<HeroBanner featured={null} />);
     expect(screen.getByText('No featured content available')).toBeInTheDocument();
@@ -62,5 +73,17 @@ describe('HeroBanner', () => {
     render(<HeroBanner featured={noBanner} />);
     expect(screen.getByText('The Dark Knight')).toBeInTheDocument();
     expect(screen.queryByAltText('The Dark Knight')).not.toBeInTheDocument();
+  });
+
+  it('Play button navigates to /watch/[id]', () => {
+    render(<HeroBanner featured={mockFeatured} />);
+    fireEvent.click(screen.getByText('Play'));
+    expect(mockPush).toHaveBeenCalledWith('/watch/f1');
+  });
+
+  it('More Info button navigates to /title/[id]', () => {
+    render(<HeroBanner featured={mockFeatured} />);
+    fireEvent.click(screen.getByText('More Info'));
+    expect(mockPush).toHaveBeenCalledWith('/title/f1');
   });
 });

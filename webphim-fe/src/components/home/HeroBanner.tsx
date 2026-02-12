@@ -81,7 +81,10 @@ export default function HeroBanner({ featured }: HeroBannerProps) {
             <Play size={20} fill="currentColor" />
             Play
           </button>
-          <button className="flex cursor-pointer items-center gap-2 rounded bg-netflix-gray/60 px-6 py-2 font-semibold text-white transition-colors hover:bg-netflix-gray/40 md:px-8">
+          <button
+            onClick={() => router.push(`/title/${featured.id}`)}
+            className="flex cursor-pointer items-center gap-2 rounded bg-netflix-gray/60 px-6 py-2 font-semibold text-white transition-colors hover:bg-netflix-gray/40 md:px-8"
+          >
             <Info size={20} />
             More Info
           </button>
