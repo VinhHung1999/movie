@@ -7,6 +7,7 @@ import { corsOptions } from './config/cors';
 import { config } from './config';
 import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
+import { apiLimiter } from './middleware/rateLimit.middleware';
 
 const app = express();
 
@@ -32,6 +33,9 @@ app.use(cookieParser());
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Rate limiting
+app.use('/api', apiLimiter);
 
 // API routes
 app.use('/api', routes);
