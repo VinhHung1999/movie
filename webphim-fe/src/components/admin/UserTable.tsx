@@ -39,7 +39,7 @@ export default function UserTable() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-netflix-border">
-        <table className="w-full text-left text-sm">
+        <table className="min-w-[700px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-netflix-border bg-netflix-dark">
               <th scope="col" className="px-4 py-3 font-medium text-netflix-light-gray">Name</th>
