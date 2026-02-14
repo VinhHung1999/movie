@@ -77,6 +77,7 @@ export interface EpisodeSummary {
   description: string | null;
   duration: number;
   thumbnailUrl: string | null;
+  videoUrl: string | null;
 }
 
 export interface SeasonDetail {

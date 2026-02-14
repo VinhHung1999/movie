@@ -70,17 +70,25 @@ function WatchPageContent() {
     data: ContentDetail;
   }>(`/content/${contentId}`);
 
-  // Fetch videos list for this content → find COMPLETED video ID
+  const content = contentData?.data;
+
+  // For series episodes, resolve video from episode data (videoUrl field).
+  // For movies, resolve via /videos?contentId= → /videos/:id/status chain.
+  const currentEpisode = episodeId && content?.seasons
+    ? content.seasons.flatMap((s) => s.episodes).find((e) => e.id === episodeId)
+    : null;
+  const isEpisodePlay = !!episodeId;
+
+  // Fetch content-level video only for movies (series episodes use episode.videoUrl)
   const { data: videoListData, error: videoListError } = useSWR<{
     success: true;
     data: { videos: { id: string; status: string }[] };
-  }>(`/videos?contentId=${contentId}`);
+  }>(isEpisodePlay ? null : `/videos?contentId=${contentId}`);
 
   const completedVideoId = videoListData?.data?.videos?.find(
     (v) => v.status === 'COMPLETED'
   )?.id;
 
-  // Fetch full video status (has hlsPath, thumbnailPaths) only when we have a completed video
   const { data: videoStatus, error: videoError } = useSWR<{
     success: true;
     data: VideoStatusResponse;
@@ -92,12 +100,20 @@ function WatchPageContent() {
     data: { progress: number; duration: number } | null;
   }>(`/watch-history/${contentId}`);
 
-  const content = contentData?.data;
   const video = videoStatus?.data;
-  const streamUrl = video?.hlsPath ? `${serverBase}/uploads/${video.hlsPath}` : null;
-  const thumbnailUrl = video?.thumbnailPaths?.[0]
-    ? `${serverBase}/uploads/${video.thumbnailPaths[0]}`
-    : content?.thumbnailUrl || undefined;
+
+  // Episode videoUrl is an absolute path (e.g. /uploads/hls/xxx/master.m3u8)
+  // Movie hlsPath is relative (e.g. hls/xxx/master.m3u8)
+  const streamUrl = currentEpisode?.videoUrl
+    ? `${serverBase}${currentEpisode.videoUrl}`
+    : video?.hlsPath
+      ? `${serverBase}/uploads/${video.hlsPath}`
+      : null;
+  const thumbnailUrl = currentEpisode?.thumbnailUrl
+    ? `${serverBase}${currentEpisode.thumbnailUrl}`
+    : video?.thumbnailPaths?.[0]
+      ? `${serverBase}/uploads/${video.thumbnailPaths[0]}`
+      : content?.thumbnailUrl || undefined;
   const savedProgress = progressData?.data?.progress;
 
   // Track episode transitions to avoid seeking to stale progress
