@@ -3,7 +3,7 @@
 // Fetch content + video data, render VideoPlayer với PlayerControls + KeyboardShortcuts.
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { AnimatePresence } from 'framer-motion';
@@ -98,7 +98,16 @@ function WatchPageContent() {
   const thumbnailUrl = video?.thumbnailPaths?.[0]
     ? `${serverBase}/uploads/${video.thumbnailPaths[0]}`
     : content?.thumbnailUrl || undefined;
-  const initialProgress = progressData?.data?.progress;
+  const savedProgress = progressData?.data?.progress;
+
+  // Track episode transitions to avoid seeking to stale progress
+  const prevEpisodeRef = useRef(episodeId);
+  const isEpisodeTransition = prevEpisodeRef.current !== episodeId;
+  useEffect(() => { prevEpisodeRef.current = episodeId; }, [episodeId]);
+
+  // Skip initialProgress during episode transitions — progress is per-content,
+  // so stale data from the previous episode would seek to the wrong timestamp
+  const initialProgress = isEpisodeTransition ? undefined : savedProgress;
 
   // Calculate next episode for series (React Compiler handles memoization)
   const nextEpisode = getNextEpisode(content, episodeId);
