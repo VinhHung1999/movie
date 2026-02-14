@@ -100,6 +100,7 @@ export const contentService = {
                 description: true,
                 duration: true,
                 thumbnailUrl: true,
+                videoUrl: true,
               },
             },
           },
