@@ -14,6 +14,7 @@ import { SWRProvider } from '@/lib/swr-config';
 import VideoPlayer from '@/components/player/VideoPlayer';
 import PlayerControls from '@/components/player/PlayerControls';
 import NextEpisodeOverlay from '@/components/player/NextEpisodeOverlay';
+import RelatedContentOverlay from '@/components/player/RelatedContentOverlay';
 import type { NextEpisodeInfo } from '@/components/player/NextEpisodeOverlay';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
@@ -180,6 +181,8 @@ function WatchPageContent() {
             player={player}
             title={content.title}
             contentId={contentId}
+            contentType={content.type}
+            episodeId={episodeId}
             onBack={handleBack}
             nextEpisode={nextEpisode}
             onPlayNextEpisode={handlePlayNextEpisode}
@@ -194,6 +197,8 @@ function WatchControls({
   player,
   title,
   contentId,
+  contentType,
+  episodeId,
   onBack,
   nextEpisode,
   onPlayNextEpisode,
@@ -201,12 +206,17 @@ function WatchControls({
   player: Parameters<NonNullable<React.ComponentProps<typeof VideoPlayer>['children']>>[0];
   title: string;
   contentId: string;
+  contentType: string;
+  episodeId: string | null;
   onBack: () => void;
   nextEpisode: NextEpisodeInfo | null;
   onPlayNextEpisode: () => void;
 }) {
   const [nextEpDismissed, setNextEpDismissed] = useState(false);
+  const [relatedDismissed, setRelatedDismissed] = useState(false);
   const autoPlayEnabled = usePlayerStore((s) => s.autoPlayNextEpisode);
+  // Note: dismiss states auto-reset on episode change because VideoPlayer
+  // uses key={contentId-episodeId}, causing full remount of WatchControls.
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -236,6 +246,14 @@ function WatchControls({
     player.duration > 0 &&
     player.currentTime / player.duration >= 0.95;
 
+  // Show related content overlay for last episode of series at 95%
+  const isLastEpisode = contentType === 'SERIES' && !!episodeId && !nextEpisode;
+  const showRelatedContent =
+    !relatedDismissed &&
+    isLastEpisode &&
+    player.duration > 0 &&
+    player.currentTime / player.duration >= 0.95;
+
   return (
     <>
       <PlayerControls player={player} title={title} onBack={onBack} />
@@ -245,6 +263,12 @@ function WatchControls({
             nextEpisode={nextEpisode}
             onPlay={onPlayNextEpisode}
             onCancel={() => setNextEpDismissed(true)}
+          />
+        )}
+        {showRelatedContent && (
+          <RelatedContentOverlay
+            contentId={contentId}
+            onDismiss={() => setRelatedDismissed(true)}
           />
         )}
       </AnimatePresence>
