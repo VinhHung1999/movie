@@ -178,6 +178,7 @@ export interface SearchFilterState {
   genre?: string;
   yearFrom?: number;
   yearTo?: number;
+  maturityRating?: 'G' | 'PG' | 'PG13' | 'R' | 'NC17';
   sort: 'relevance' | 'newest' | 'oldest' | 'views' | 'title';
 }
 

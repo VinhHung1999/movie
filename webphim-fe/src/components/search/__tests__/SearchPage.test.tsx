@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SWRConfig } from 'swr';
 
-const mockPush = vi.fn();
+const mockReplace = vi.fn();
 let mockSearchParams = new URLSearchParams('q=dark+knight');
 
 vi.mock('next/navigation', async () => ({
   useRouter: () => ({
-    push: mockPush,
-    replace: vi.fn(),
+    push: vi.fn(),
+    replace: mockReplace,
     back: vi.fn(),
     prefetch: vi.fn(),
   }),
@@ -76,6 +75,26 @@ const mockGenres = {
   ],
 };
 
+const mockTrending = {
+  success: true,
+  data: [
+    {
+      id: 't1',
+      type: 'MOVIE',
+      title: 'Popular Movie',
+      description: 'Trending',
+      releaseYear: 2025,
+      maturityRating: 'PG',
+      duration: 120,
+      thumbnailUrl: '/popular.jpg',
+      bannerUrl: null,
+      viewCount: 5000,
+      genres: [],
+    },
+  ],
+  meta: { page: 1, limit: 12, total: 1, totalPages: 1 },
+};
+
 const swrDataMap: Record<string, unknown> = {};
 
 vi.mock('swr', () => ({
@@ -100,28 +119,29 @@ beforeEach(async () => {
   Object.keys(swrDataMap).forEach((k) => delete swrDataMap[k]);
 
   // Set default SWR data
-  swrDataMap['/search?q=dark%20knight&sort=relevance&page=1&limit=20'] = mockSearchResults;
+  swrDataMap['/search?q=dark+knight&sort=relevance&page=1&limit=20'] = mockSearchResults;
   swrDataMap['/genres'] = mockGenres;
+  swrDataMap['/content?sort=views&limit=12'] = mockTrending;
 
   vi.resetModules();
   const mod = await import('../../../app/(main)/search/page');
   SearchPage = mod.default;
 });
 
-describe('SearchPage (Task 9.5)', () => {
-  it('renders search results heading with query', () => {
+describe('SearchPage (Sprint 15 Enhanced)', () => {
+  it('renders search hero with large input', () => {
     render(<SearchPage />);
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      "Search Results for 'dark knight'",
-    );
+    expect(screen.getByTestId('search-hero')).toBeInTheDocument();
+    expect(screen.getByTestId('search-hero-input')).toBeInTheDocument();
+    expect(screen.getByTestId('search-hero-input')).toHaveAttribute('aria-label', 'Search titles, people, genres');
   });
 
-  it('shows result count', () => {
+  it('shows result count for query', () => {
     render(<SearchPage />);
 
     const count = screen.getByTestId('result-count');
-    expect(count).toHaveTextContent('2 results found');
+    expect(count).toHaveTextContent('2 results');
     expect(count).toHaveAttribute('aria-live', 'polite');
   });
 
@@ -132,21 +152,21 @@ describe('SearchPage (Task 9.5)', () => {
     expect(screen.getByAltText('The Dark Knight Rises')).toBeInTheDocument();
   });
 
-  it('renders filter sidebar with genres', () => {
+  it('renders filter sidebar with genres and rating filter', () => {
     render(<SearchPage />);
 
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Genre')).toBeInTheDocument();
+    expect(screen.getByText('Rating')).toBeInTheDocument();
     expect(screen.getByText('Sort By')).toBeInTheDocument();
   });
 
-  it('updates URL when filter changes', () => {
+  it('updates URL when type filter changes', () => {
     render(<SearchPage />);
 
-    // Click Movies type filter
     fireEvent.click(screen.getByLabelText('Movies'));
 
-    expect(mockPush).toHaveBeenCalledWith(
+    expect(mockReplace).toHaveBeenCalledWith(
       expect.stringContaining('type=MOVIE'),
     );
   });
@@ -156,13 +176,12 @@ describe('SearchPage (Task 9.5)', () => {
 
     fireEvent.click(screen.getByLabelText('Movies'));
 
-    expect(mockPush).toHaveBeenCalledWith(
+    expect(mockReplace).toHaveBeenCalledWith(
       expect.stringContaining('q=dark+knight'),
     );
   });
 
   it('shows loading state when data is not available', () => {
-    // Remove search data to trigger loading
     Object.keys(swrDataMap).forEach((k) => {
       if (k.startsWith('/search?')) delete swrDataMap[k];
     });
@@ -173,7 +192,7 @@ describe('SearchPage (Task 9.5)', () => {
   });
 
   it('shows empty state when no results', () => {
-    swrDataMap['/search?q=dark%20knight&sort=relevance&page=1&limit=20'] = {
+    swrDataMap['/search?q=dark+knight&sort=relevance&page=1&limit=20'] = {
       success: true,
       data: [],
       meta: { page: 1, limit: 20, total: 0, totalPages: 0, query: 'dark knight' },
@@ -184,16 +203,17 @@ describe('SearchPage (Task 9.5)', () => {
     expect(screen.getByTestId('search-empty-state')).toBeInTheDocument();
   });
 
-  it('shows prompt when no query provided', () => {
+  it('shows trending content when no query', () => {
     mockSearchParams = new URLSearchParams('');
 
     render(<SearchPage />);
 
-    expect(screen.getByText('Enter a search term to find movies and series.')).toBeInTheDocument();
+    expect(screen.getByTestId('trending-section')).toBeInTheDocument();
+    expect(screen.getByText('Popular on WebPhim')).toBeInTheDocument();
   });
 
   it('renders pagination when multiple pages', () => {
-    swrDataMap['/search?q=dark%20knight&sort=relevance&page=1&limit=20'] = {
+    swrDataMap['/search?q=dark+knight&sort=relevance&page=1&limit=20'] = {
       ...mockSearchResults,
       meta: { ...mockSearchResults.meta, total: 40, totalPages: 2 },
     };
@@ -204,5 +224,36 @@ describe('SearchPage (Task 9.5)', () => {
     expect(pagination).toBeInTheDocument();
     expect(screen.getByText('Previous')).toBeDisabled();
     expect(screen.getByText('Next')).not.toBeDisabled();
+  });
+
+  it('shows active filter chips when filters applied', () => {
+    mockSearchParams = new URLSearchParams('q=test&type=MOVIE&genre=action');
+    swrDataMap['/search?q=test&type=MOVIE&genre=action&sort=relevance&page=1&limit=20'] = mockSearchResults;
+
+    render(<SearchPage />);
+
+    expect(screen.getByTestId('active-filters')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-chip-type')).toHaveTextContent('Movies');
+    expect(screen.getByTestId('filter-chip-genre')).toHaveTextContent('Action');
+  });
+
+  it('shows maturity rating filter options', () => {
+    render(<SearchPage />);
+
+    expect(screen.getByLabelText('All Ratings')).toBeInTheDocument();
+    expect(screen.getByLabelText('PG-13')).toBeInTheDocument();
+    expect(screen.getByLabelText('R')).toBeInTheDocument();
+  });
+
+  it('shows clear button when input has text', () => {
+    render(<SearchPage />);
+
+    expect(screen.getByTestId('search-hero-clear')).toBeInTheDocument();
+  });
+
+  it('has search form with role="search"', () => {
+    render(<SearchPage />);
+
+    expect(screen.getByRole('search')).toBeInTheDocument();
   });
 });

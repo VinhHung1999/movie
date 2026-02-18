@@ -128,6 +128,36 @@ export default function SearchFilters({ filters, onFilterChange, genres }: Searc
         </div>
       </fieldset>
 
+      {/* Maturity Rating filter */}
+      <fieldset>
+        <legend className="mb-2 text-sm font-semibold text-white">Rating</legend>
+        <div role="radiogroup" aria-label="Maturity rating filter" className="space-y-1">
+          {[
+            { value: undefined, label: 'All Ratings' },
+            { value: 'G' as const, label: 'G' },
+            { value: 'PG' as const, label: 'PG' },
+            { value: 'PG13' as const, label: 'PG-13' },
+            { value: 'R' as const, label: 'R' },
+            { value: 'NC17' as const, label: 'NC-17' },
+          ].map((option) => (
+            <label
+              key={option.label}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-netflix-white transition-colors hover:bg-netflix-gray hover:text-white"
+            >
+              <input
+                type="radio"
+                name="rating-filter"
+                role="radio"
+                checked={filters.maturityRating === option.value}
+                onChange={() => updateFilter({ maturityRating: option.value })}
+                className="accent-netflix-red"
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       {/* Sort */}
       <fieldset>
         <legend className="mb-2 text-sm font-semibold text-white">Sort By</legend>

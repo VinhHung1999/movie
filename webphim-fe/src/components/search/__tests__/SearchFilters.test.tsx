@@ -151,4 +151,54 @@ describe('SearchFilters', () => {
     fireEvent.click(toggle);
     expect(screen.getByTestId('mobile-filters')).toBeInTheDocument();
   });
+
+  it('renders maturity rating filter with all options', () => {
+    render(
+      <SearchFilters filters={defaultFilters} onFilterChange={onFilterChange} genres={mockGenres} />,
+    );
+
+    expect(screen.getByText('Rating')).toBeInTheDocument();
+    expect(screen.getByLabelText('All Ratings')).toBeInTheDocument();
+    expect(screen.getByLabelText('G')).toBeInTheDocument();
+    expect(screen.getByLabelText('PG')).toBeInTheDocument();
+    expect(screen.getByLabelText('PG-13')).toBeInTheDocument();
+    expect(screen.getByLabelText('R')).toBeInTheDocument();
+    expect(screen.getByLabelText('NC-17')).toBeInTheDocument();
+  });
+
+  it('calls onFilterChange with maturityRating when rating clicked', () => {
+    render(
+      <SearchFilters filters={defaultFilters} onFilterChange={onFilterChange} genres={mockGenres} />,
+    );
+
+    fireEvent.click(screen.getByLabelText('PG-13'));
+
+    expect(onFilterChange).toHaveBeenCalledWith(
+      expect.objectContaining({ maturityRating: 'PG13' }),
+    );
+  });
+
+  it('clears maturityRating when All Ratings selected', () => {
+    render(
+      <SearchFilters
+        filters={{ ...defaultFilters, maturityRating: 'R' }}
+        onFilterChange={onFilterChange}
+        genres={mockGenres}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('All Ratings'));
+
+    expect(onFilterChange).toHaveBeenCalledWith(
+      expect.objectContaining({ maturityRating: undefined }),
+    );
+  });
+
+  it('has radiogroup role for maturity rating filter', () => {
+    render(
+      <SearchFilters filters={defaultFilters} onFilterChange={onFilterChange} genres={mockGenres} />,
+    );
+
+    expect(screen.getByRole('radiogroup', { name: 'Maturity rating filter' })).toBeInTheDocument();
+  });
 });
