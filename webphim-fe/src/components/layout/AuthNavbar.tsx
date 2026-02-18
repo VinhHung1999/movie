@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/home', label: 'Home' },
   { href: '/browse/series', label: 'Series' },
   { href: '/browse/movies', label: 'Movies' },
+  { href: '/browse', label: 'Browse' },
   { href: '/browse/my-list', label: 'My List' },
 ];
 
