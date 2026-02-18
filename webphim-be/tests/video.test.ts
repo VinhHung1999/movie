@@ -278,7 +278,7 @@ describe('GET /api/videos/:id/stream - error cases', () => {
 // ============================================
 
 describe('Full Integration: Upload → Transcode → Stream', () => {
-  it('should complete full flow: upload → transcode → poll → stream', async () => {
+  it('should complete full flow: upload → transcode → event-driven wait → stream', async () => {
     const token = await getToken();
 
     // --- Step 1: Upload ---
@@ -291,7 +291,18 @@ describe('Full Integration: Upload → Transcode → Stream', () => {
     const worker = startTranscodeWorker();
 
     try {
-      // --- Step 3: Trigger transcode ---
+      // --- Step 3: Set up event-driven wait BEFORE triggering transcode ---
+      const jobCompleted = new Promise<void>((resolve, reject) => {
+        worker.on('completed', (job) => {
+          if (job.data.videoId === videoId) resolve();
+        });
+        worker.on('failed', (job, err) => {
+          if (job?.data.videoId === videoId) reject(err);
+        });
+        setTimeout(() => reject(new Error('Transcode timeout after 120s')), 120_000);
+      });
+
+      // --- Step 4: Trigger transcode ---
       const transcodeRes = await request
         .post(`/api/videos/${videoId}/transcode`)
         .set('Authorization', `Bearer ${token}`);
@@ -304,34 +315,23 @@ describe('Full Integration: Upload → Transcode → Stream', () => {
       });
       expect(transcodeRes.body.data.jobId).toBeDefined();
 
-      // --- Step 4: Poll status until COMPLETED ---
-      let status = 'QUEUED';
-      let pollCount = 0;
-      const maxPolls = 60; // 60 * 2s = 120s max
-      let statusData: Record<string, unknown> = {};
+      // --- Step 5: Wait for completion via event (no polling) ---
+      await jobCompleted;
 
-      while (!['COMPLETED', 'FAILED'].includes(status) && pollCount < maxPolls) {
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait 2s
-        pollCount++;
+      // --- Step 6: Verify final state via API ---
+      const statusRes = await request
+        .get(`/api/videos/${videoId}/status`)
+        .set('Authorization', `Bearer ${token}`);
 
-        const statusRes = await request
-          .get(`/api/videos/${videoId}/status`)
-          .set('Authorization', `Bearer ${token}`);
+      expect(statusRes.status).toBe(200);
+      expect(statusRes.body.success).toBe(true);
+      expect(statusRes.body.data.status).toBe('COMPLETED');
+      expect(statusRes.body.data.duration).toBeGreaterThan(0);
+      expect(statusRes.body.data.hlsPath).toBeDefined();
+      expect(statusRes.body.data.hlsPath).toContain('master.m3u8');
+      expect(statusRes.body.data.progress).toBe(100);
 
-        expect(statusRes.status).toBe(200);
-        expect(statusRes.body.success).toBe(true);
-        statusData = statusRes.body.data;
-        status = statusData.status as string;
-      }
-
-      // Verify transcode completed successfully
-      expect(status).toBe('COMPLETED');
-      expect(statusData.duration).toBeGreaterThan(0);
-      expect(statusData.hlsPath).toBeDefined();
-      expect(statusData.hlsPath).toContain('master.m3u8');
-      expect(statusData.progress).toBe(100);
-
-      // --- Step 5: Verify DB record ---
+      // --- Step 7: Verify DB record ---
       const dbVideo = await prisma.video.findUnique({
         where: { id: videoId },
       });
@@ -341,7 +341,7 @@ describe('Full Integration: Upload → Transcode → Stream', () => {
       expect(dbVideo!.hlsPath).toContain('master.m3u8');
       expect(dbVideo!.thumbnailPaths.length).toBeGreaterThan(0);
 
-      // --- Step 6: Get stream URL ---
+      // --- Step 8: Get stream URL ---
       const streamRes = await request
         .get(`/api/videos/${videoId}/stream`)
         .set('Authorization', `Bearer ${token}`);
@@ -354,7 +354,7 @@ describe('Full Integration: Upload → Transcode → Stream', () => {
       expect(streamRes.body.data.status).toBe('COMPLETED');
       expect(Array.isArray(streamRes.body.data.thumbnails)).toBe(true);
 
-      // --- Step 7: Verify master.m3u8 is valid HLS ---
+      // --- Step 9: Verify master.m3u8 is valid HLS ---
       const hlsDir = path.join(config.storage.localDir, 'hls', videoId);
       const masterPlaylist = await fs.readFile(path.join(hlsDir, 'master.m3u8'), 'utf-8');
 
@@ -369,7 +369,7 @@ describe('Full Integration: Upload → Transcode → Stream', () => {
       // Always close worker
       await worker.close();
     }
-  }, 120_000); // 2 minute timeout for transcode
+  }, 180_000); // 3 minute timeout for integration describe block
 });
 
 // ============================================
