@@ -118,7 +118,8 @@ beforeEach(async () => {
   mockSearchParams = new URLSearchParams('q=dark+knight');
   Object.keys(swrDataMap).forEach((k) => delete swrDataMap[k]);
 
-  // Set default SWR data
+  // SWR key is now built from effective query + filters (not URL params)
+  // Format: /search?q=...&sort=relevance&page=1&limit=20
   swrDataMap['/search?q=dark+knight&sort=relevance&page=1&limit=20'] = mockSearchResults;
   swrDataMap['/genres'] = mockGenres;
   swrDataMap['/content?sort=views&limit=12'] = mockTrending;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { Search, X, Loader2 } from 'lucide-react';
@@ -26,25 +26,23 @@ const SORT_LABELS: Record<string, string> = {
   title: 'Title A-Z',
 };
 
-function buildSearchUrl(params: URLSearchParams): string {
-  const apiParams = new URLSearchParams();
-  const q = params.get('q') || '';
-  if (!q) return '';
-  apiParams.set('q', q);
-  const type = params.get('type');
-  if (type) apiParams.set('type', type);
-  const genre = params.get('genre');
-  if (genre) apiParams.set('genre', genre);
-  const yearFrom = params.get('yearFrom');
-  if (yearFrom) apiParams.set('yearFrom', yearFrom);
-  const yearTo = params.get('yearTo');
-  if (yearTo) apiParams.set('yearTo', yearTo);
-  const maturityRating = params.get('maturityRating');
-  if (maturityRating) apiParams.set('maturityRating', maturityRating);
-  apiParams.set('sort', params.get('sort') || 'relevance');
-  apiParams.set('page', params.get('page') || '1');
-  apiParams.set('limit', '20');
-  return `/search?${apiParams.toString()}`;
+function buildSwrKey(
+  query: string,
+  filters: SearchFilterState,
+  page: number,
+): string | null {
+  if (!query) return null;
+  const params = new URLSearchParams();
+  params.set('q', query);
+  if (filters.type) params.set('type', filters.type);
+  if (filters.genre) params.set('genre', filters.genre);
+  if (filters.yearFrom) params.set('yearFrom', String(filters.yearFrom));
+  if (filters.yearTo) params.set('yearTo', String(filters.yearTo));
+  if (filters.maturityRating) params.set('maturityRating', filters.maturityRating);
+  params.set('sort', filters.sort);
+  params.set('page', String(page));
+  params.set('limit', '20');
+  return `/search?${params.toString()}`;
 }
 
 export default function SearchPage() {
@@ -60,17 +58,55 @@ export default function SearchPage() {
   const sort = (searchParams.get('sort') as SearchFilterState['sort']) || 'relevance';
   const page = Number(searchParams.get('page')) || 1;
 
-  // Local input state with debounce
   const [localQuery, setLocalQuery] = useState(q);
+  const [typing, setTyping] = useState(false);
   const debouncedQuery = useDebounce(localQuery, 500);
+
+  // Sync localQuery when URL q changes externally (e.g., navbar navigation)
+  useEffect(() => {
+    setLocalQuery(q);
+    setTyping(false);
+  }, [q]);
 
   const filters: SearchFilterState = { type, genre, yearFrom, yearTo, maturityRating, sort };
 
-  // Shared URL builder
+  // Effective query: if user is actively typing, use debounced input; otherwise use URL q
+  const effectiveQuery = typing ? debouncedQuery.trim() : q;
+
+  // SWR key from effective query — works for both typing and URL navigation
+  const swrKey = buildSwrKey(effectiveQuery, filters, page);
+  const { data, isLoading } = useSWR<SearchResultsResponse>(swrKey);
+
+  // Fetch genres for filter sidebar
+  const { data: genresData } = useSWR<{ success: true; data: Genre[] }>('/genres');
+  const genres = genresData?.data ?? [];
+
+  // Fetch trending/popular content when no query at all
+  const { data: trendingData } = useSWR<ContentListResponse>(
+    !effectiveQuery ? '/content?sort=views&limit=12' : null,
+  );
+
+  // Sync debounced query to URL for shareable links
+  useEffect(() => {
+    if (typing && debouncedQuery.trim() && debouncedQuery.trim() !== q) {
+      const params = new URLSearchParams();
+      params.set('q', debouncedQuery.trim());
+      if (type) params.set('type', type);
+      if (genre) params.set('genre', genre);
+      if (yearFrom) params.set('yearFrom', String(yearFrom));
+      if (yearTo) params.set('yearTo', String(yearTo));
+      if (maturityRating) params.set('maturityRating', maturityRating);
+      if (sort && sort !== 'relevance') params.set('sort', sort);
+      router.replace(`/search?${params.toString()}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery]);
+
+  // URL builder for filter/page changes
   const buildUrl = useCallback(
     (newFilters: SearchFilterState, newQ?: string, newPage?: number) => {
       const params = new URLSearchParams();
-      const query = newQ !== undefined ? newQ : q;
+      const query = newQ !== undefined ? newQ : effectiveQuery;
       if (query) params.set('q', query);
       if (newFilters.type) params.set('type', newFilters.type);
       if (newFilters.genre) params.set('genre', newFilters.genre);
@@ -81,20 +117,7 @@ export default function SearchPage() {
       if (newPage && newPage > 1) params.set('page', String(newPage));
       return `/search?${params.toString()}`;
     },
-    [q],
-  );
-
-  // Build SWR key from URL params
-  const swrKey = buildSearchUrl(searchParams);
-  const { data, isLoading } = useSWR<SearchResultsResponse>(swrKey || null);
-
-  // Fetch genres for filter sidebar
-  const { data: genresData } = useSWR<{ success: true; data: Genre[] }>('/genres');
-  const genres = genresData?.data ?? [];
-
-  // Fetch trending/popular content when no query
-  const { data: trendingData } = useSWR<ContentListResponse>(
-    !q ? '/content?sort=views&limit=12' : null,
+    [effectiveQuery],
   );
 
   const handleFilterChange = useCallback(
@@ -111,21 +134,19 @@ export default function SearchPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localQuery.trim()) {
+      setTyping(false);
       router.replace(buildUrl(filters, localQuery.trim(), 1));
     }
   };
 
   const handleInputChange = (value: string) => {
     setLocalQuery(value);
+    setTyping(true);
     if (!value.trim()) {
+      setTyping(false);
       router.replace(buildUrl(filters, '', 1));
     }
   };
-
-  // When debounced query changes and differs from URL, update URL
-  if (debouncedQuery !== q && debouncedQuery.trim()) {
-    router.replace(buildUrl(filters, debouncedQuery.trim(), 1));
-  }
 
   const results = data?.data ?? [];
   const meta = data?.meta;
@@ -205,14 +226,14 @@ export default function SearchPage() {
         )}
 
         {/* Result count */}
-        {q && meta && (
+        {effectiveQuery && meta && (
           <div className="mb-4">
             <p
               className="text-sm text-netflix-mid-gray"
               aria-live="polite"
               data-testid="result-count"
             >
-              {meta.total} {meta.total === 1 ? 'result' : 'results'} for &lsquo;{q}&rsquo;
+              {meta.total} {meta.total === 1 ? 'result' : 'results'} for &lsquo;{effectiveQuery}&rsquo;
             </p>
           </div>
         )}
@@ -233,7 +254,7 @@ export default function SearchPage() {
               </div>
             )}
 
-            {!isLoading && q && results.length === 0 && <SearchEmptyState query={q} />}
+            {!isLoading && effectiveQuery && results.length === 0 && <SearchEmptyState query={effectiveQuery} />}
 
             {!isLoading && results.length > 0 && (
               <>
@@ -265,7 +286,7 @@ export default function SearchPage() {
             )}
 
             {/* No query: show trending content */}
-            {!isLoading && !q && (
+            {!isLoading && !effectiveQuery && (
               <div data-testid="trending-section">
                 <h2 className="mb-4 text-xl font-semibold text-white">Popular on WebPhim</h2>
                 {trendingItems.length > 0 ? (
