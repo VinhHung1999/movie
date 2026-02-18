@@ -18,7 +18,7 @@ interface ContentRow {
 
 export const searchService = {
   async search(query: SearchQuery) {
-    const { q, page, limit, type, genre, yearFrom, yearTo, sort } = query;
+    const { q, page, limit, type, genre, yearFrom, yearTo, sort, maturityRating } = query;
     const offset = (page - 1) * limit;
 
     // Build dynamic WHERE fragments
@@ -37,6 +37,9 @@ export const searchService = {
       : Prisma.empty;
     const yearToFilter = yearTo
       ? Prisma.sql`AND c.release_year <= ${yearTo}`
+      : Prisma.empty;
+    const maturityFilter = maturityRating
+      ? Prisma.sql`AND c.maturity_rating = ${maturityRating}::"MaturityRating"`
       : Prisma.empty;
 
     // Build ORDER BY
@@ -72,6 +75,7 @@ export const searchService = {
         ${genreFilter}
         ${yearFromFilter}
         ${yearToFilter}
+        ${maturityFilter}
       ORDER BY ${orderBy}
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -85,6 +89,7 @@ export const searchService = {
         ${genreFilter}
         ${yearFromFilter}
         ${yearToFilter}
+        ${maturityFilter}
     `;
     const total = Number(countResult[0].count);
 

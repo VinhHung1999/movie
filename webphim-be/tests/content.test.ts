@@ -231,6 +231,86 @@ describe('GET /api/content', () => {
     });
   });
 
+  describe('maturityRating filter', () => {
+    it('should filter by maturityRating=PG13', async () => {
+      // testMovie has PG13, testSeries has R
+      await seedTestData();
+
+      const res = await request.get('/api/content?maturityRating=PG13');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].maturityRating).toBe('PG13');
+    });
+
+    it('should filter by maturityRating=R', async () => {
+      await seedTestData();
+
+      const res = await request.get('/api/content?maturityRating=R');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].maturityRating).toBe('R');
+    });
+
+    it('should return empty for maturityRating with no matches', async () => {
+      await seedTestData(); // PG13 + R only
+
+      const res = await request.get('/api/content?maturityRating=G');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
+
+    it('should reject invalid maturityRating value', async () => {
+      const res = await request.get('/api/content?maturityRating=INVALID');
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('year range filter', () => {
+    it('should filter by yearFrom', async () => {
+      // testMovie=2024, testSeries=2023
+      await seedTestData();
+
+      const res = await request.get('/api/content?yearFrom=2024');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].releaseYear).toBeGreaterThanOrEqual(2024);
+    });
+
+    it('should filter by yearTo', async () => {
+      await seedTestData();
+
+      const res = await request.get('/api/content?yearTo=2023');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].releaseYear).toBeLessThanOrEqual(2023);
+    });
+
+    it('should filter by yearFrom + yearTo range', async () => {
+      await seedTestData();
+
+      const res = await request.get('/api/content?yearFrom=2023&yearTo=2024');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(2);
+    });
+
+    it('should return empty for year range with no matches', async () => {
+      await seedTestData();
+
+      const res = await request.get('/api/content?yearFrom=2025&yearTo=2026');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
+  });
+
   describe('combined filters', () => {
     it('should apply type + genre filters together', async () => {
       await seedTestData();
@@ -253,6 +333,19 @@ describe('GET /api/content', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBeLessThanOrEqual(10);
       expect(res.body.meta.page).toBe(1);
+    });
+
+    it('should apply maturityRating + type + yearFrom together', async () => {
+      await seedTestData();
+
+      const res = await request.get(
+        '/api/content?maturityRating=PG13&type=MOVIE&yearFrom=2020',
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(1);
+      expect(res.body.data[0].maturityRating).toBe('PG13');
+      expect(res.body.data[0].type).toBe('MOVIE');
     });
   });
 });

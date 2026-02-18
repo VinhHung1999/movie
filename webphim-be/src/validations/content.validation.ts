@@ -8,6 +8,9 @@ export const contentListSchema = z.object({
     genre: z.string().optional(),
     sort: z.enum(['newest', 'oldest', 'rating', 'views', 'title']).default('newest'),
     search: z.string().optional(),
+    maturityRating: z.enum(['G', 'PG', 'PG13', 'R', 'NC17']).optional(),
+    yearFrom: z.coerce.number().int().min(1900).max(2100).optional(),
+    yearTo: z.coerce.number().int().min(1900).max(2100).optional(),
   }),
 });
 

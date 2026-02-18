@@ -12,7 +12,7 @@ const SORT_MAP: Record<string, Prisma.ContentOrderByWithRelationInput> = {
 
 export const contentService = {
   async list(query: ContentListQuery) {
-    const { page, limit, type, genre, sort } = query;
+    const { page, limit, type, genre, sort, maturityRating, yearFrom, yearTo } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ContentWhereInput = {};
@@ -27,6 +27,16 @@ export const contentService = {
           genre: { slug: genre },
         },
       };
+    }
+
+    if (maturityRating) {
+      where.maturityRating = maturityRating;
+    }
+
+    if (yearFrom || yearTo) {
+      where.releaseYear = {};
+      if (yearFrom) where.releaseYear.gte = yearFrom;
+      if (yearTo) where.releaseYear.lte = yearTo;
     }
 
     const orderBy = SORT_MAP[sort] || SORT_MAP.newest;

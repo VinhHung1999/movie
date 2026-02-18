@@ -9,6 +9,7 @@ export const searchSchema = z.object({
     genre: z.string().optional().transform((v) => v || undefined),
     yearFrom: z.coerce.number().int().min(1900).max(2100).optional(),
     yearTo: z.coerce.number().int().min(1900).max(2100).optional(),
+    maturityRating: z.enum(['G', 'PG', 'PG13', 'R', 'NC17']).optional(),
     sort: z
       .enum(['relevance', 'newest', 'oldest', 'views', 'title'])
       .default('relevance'),

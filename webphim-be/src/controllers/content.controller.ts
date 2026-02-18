@@ -17,6 +17,9 @@ export const contentController = {
         genre: req.query.genre as string | undefined,
         sort: (req.query.sort as ContentListQuery['sort']) || 'newest',
         search: req.query.search as string | undefined,
+        maturityRating: req.query.maturityRating as ContentListQuery['maturityRating'],
+        yearFrom: req.query.yearFrom ? Number(req.query.yearFrom) : undefined,
+        yearTo: req.query.yearTo ? Number(req.query.yearTo) : undefined,
       };
 
       const result = await contentService.list(query);
