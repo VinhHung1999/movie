@@ -7,7 +7,6 @@ import { Search, X, Loader2 } from 'lucide-react';
 import ContentGrid from '@/components/browse/ContentGrid';
 import SearchFilters from '@/components/search/SearchFilters';
 import SearchEmptyState from '@/components/search/SearchEmptyState';
-import { useDebounce } from '@/hooks/useDebounce';
 import type { SearchResultsResponse, SearchFilterState, Genre, ContentListResponse } from '@/types';
 
 const RATING_LABELS: Record<string, string> = {
@@ -58,23 +57,28 @@ export default function SearchPage() {
   const sort = (searchParams.get('sort') as SearchFilterState['sort']) || 'relevance';
   const page = Number(searchParams.get('page')) || 1;
 
+  // localQuery = what the input shows; searchQuery = what SWR fetches
   const [localQuery, setLocalQuery] = useState(q);
-  const [typing, setTyping] = useState(false);
-  const debouncedQuery = useDebounce(localQuery, 500);
+  const [searchQuery, setSearchQuery] = useState(q);
 
-  // Sync localQuery when URL q changes externally (e.g., navbar navigation)
+  // Debounce: user typing → update searchQuery after 500ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(localQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localQuery]);
+
+  // URL sync: when URL q changes (navbar navigation), update both immediately
   useEffect(() => {
     setLocalQuery(q);
-    setTyping(false);
+    setSearchQuery(q);
   }, [q]);
 
   const filters: SearchFilterState = { type, genre, yearFrom, yearTo, maturityRating, sort };
 
-  // Effective query: if user is actively typing, use debounced input; otherwise use URL q
-  const effectiveQuery = typing ? debouncedQuery.trim() : q;
-
-  // SWR key from effective query — works for both typing and URL navigation
-  const swrKey = buildSwrKey(effectiveQuery, filters, page);
+  // SWR key from searchQuery — single source of truth
+  const swrKey = buildSwrKey(searchQuery, filters, page);
   const { data, isLoading } = useSWR<SearchResultsResponse>(swrKey);
 
   // Fetch genres for filter sidebar
@@ -83,14 +87,14 @@ export default function SearchPage() {
 
   // Fetch trending/popular content when no query at all
   const { data: trendingData } = useSWR<ContentListResponse>(
-    !effectiveQuery ? '/content?sort=views&limit=12' : null,
+    !searchQuery ? '/content?sort=views&limit=12' : null,
   );
 
-  // Sync debounced query to URL for shareable links
+  // Sync searchQuery to URL for shareable links
   useEffect(() => {
-    if (typing && debouncedQuery.trim() && debouncedQuery.trim() !== q) {
+    if (searchQuery && searchQuery !== q) {
       const params = new URLSearchParams();
-      params.set('q', debouncedQuery.trim());
+      params.set('q', searchQuery);
       if (type) params.set('type', type);
       if (genre) params.set('genre', genre);
       if (yearFrom) params.set('yearFrom', String(yearFrom));
@@ -100,13 +104,13 @@ export default function SearchPage() {
       router.replace(`/search?${params.toString()}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery]);
+  }, [searchQuery]);
 
   // URL builder for filter/page changes
   const buildUrl = useCallback(
     (newFilters: SearchFilterState, newQ?: string, newPage?: number) => {
       const params = new URLSearchParams();
-      const query = newQ !== undefined ? newQ : effectiveQuery;
+      const query = newQ !== undefined ? newQ : searchQuery;
       if (query) params.set('q', query);
       if (newFilters.type) params.set('type', newFilters.type);
       if (newFilters.genre) params.set('genre', newFilters.genre);
@@ -117,7 +121,7 @@ export default function SearchPage() {
       if (newPage && newPage > 1) params.set('page', String(newPage));
       return `/search?${params.toString()}`;
     },
-    [effectiveQuery],
+    [searchQuery],
   );
 
   const handleFilterChange = useCallback(
@@ -134,16 +138,15 @@ export default function SearchPage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localQuery.trim()) {
-      setTyping(false);
+      setSearchQuery(localQuery.trim());
       router.replace(buildUrl(filters, localQuery.trim(), 1));
     }
   };
 
   const handleInputChange = (value: string) => {
     setLocalQuery(value);
-    setTyping(true);
     if (!value.trim()) {
-      setTyping(false);
+      setSearchQuery('');
       router.replace(buildUrl(filters, '', 1));
     }
   };
@@ -226,14 +229,14 @@ export default function SearchPage() {
         )}
 
         {/* Result count */}
-        {effectiveQuery && meta && (
+        {searchQuery && meta && (
           <div className="mb-4">
             <p
               className="text-sm text-netflix-mid-gray"
               aria-live="polite"
               data-testid="result-count"
             >
-              {meta.total} {meta.total === 1 ? 'result' : 'results'} for &lsquo;{effectiveQuery}&rsquo;
+              {meta.total} {meta.total === 1 ? 'result' : 'results'} for &lsquo;{searchQuery}&rsquo;
             </p>
           </div>
         )}
@@ -254,7 +257,7 @@ export default function SearchPage() {
               </div>
             )}
 
-            {!isLoading && effectiveQuery && results.length === 0 && <SearchEmptyState query={effectiveQuery} />}
+            {!isLoading && searchQuery && results.length === 0 && <SearchEmptyState query={searchQuery} />}
 
             {!isLoading && results.length > 0 && (
               <>
@@ -286,7 +289,7 @@ export default function SearchPage() {
             )}
 
             {/* No query: show trending content */}
-            {!isLoading && !effectiveQuery && (
+            {!isLoading && !searchQuery && (
               <div data-testid="trending-section">
                 <h2 className="mb-4 text-xl font-semibold text-white">Popular on WebPhim</h2>
                 {trendingItems.length > 0 ? (
